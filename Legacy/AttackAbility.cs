@@ -97,7 +97,8 @@ namespace _0G.Legacy
         protected int _attackLimit = 1;
 
         [SerializeField]
-        [Tooltip("Maximum new attacks per second.")]
+        [Tooltip("Maximum new attacks per second." +
+            " Using a value of \"0\" removes the restriction, allowing for infinite attacks per second.")]
         protected float _attackRate = FLOAT_DEFAULT;
 
         [SerializeField]
@@ -361,7 +362,7 @@ namespace _0G.Legacy
         {
             UpdateSerializedVersion();
             _attackLimit = Mathf.Max(1, _attackLimit);
-            _attackRate = Mathf.Max(FLOAT_MIN, _attackRate);
+            _attackRate = Mathf.Max(0, _attackRate);
             _attackLifetime.floatValue = Mathf.Max(FLOAT_MIN, _attackLifetime.floatValue);
             _knockBackTime = Mathf.Max(0, _knockBackTime);
         }
@@ -426,7 +427,7 @@ namespace _0G.Legacy
 
         private void SetAttackRateSec()
         {
-            _attackRateSec = 1f / _attackRate;
+            _attackRateSec = _attackRate.Ap(0) ? 0 : 1f / _attackRate;
         }
 
         private void UpdateSerializedVersion()
