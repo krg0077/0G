@@ -18,7 +18,11 @@ namespace _0G.Legacy
     /// </summary>
     public abstract class Attack : MonoBehaviour, IBodyComponent
     {
+        // EVENTS
+
         public event System.Action<Attack> Destroyed;
+
+        // SERIALIZED FIELDS
 
         [Header("Optional Standalone Attack Ability")]
 
@@ -30,12 +34,15 @@ namespace _0G.Legacy
         [SerializeField]
         private GameObjectBody m_Body = default;
 
+        // PRIVATE FIELDS
+
         Attacker _attacker;
         List<AttackTarget> _attackTargets = new List<AttackTarget>();
         BoxCollider _boxCollider;
         bool _isInitialized;
         TimeThread _timeThread;
-        Vector2 _velocity;
+
+        // MAIN PROPERTIES
 
         public virtual AttackAbility attackAbility { get { return _attackAbility; } }
 
@@ -49,16 +56,24 @@ namespace _0G.Legacy
 
         public bool IsMain => !_attackAbility.IsAuxiliaryAttack;
 
+        public Vector3 Velocity { get; set; }
+
+        // SHORTCUT PROPERTIES
+
         public GameObjectBody Body => m_Body;
 
         private Hitbox Hitbox => m_Body.Refs.Hitbox;
 
         private Hurtbox Hurtbox => m_Body.Refs.Hurtbox;
 
+        // INIT METHOD
+
         public void InitBody(GameObjectBody body)
         {
             m_Body = body;
         }
+
+        // MONOBEHAVIOUR METHODS
 
         protected virtual void Awake()
         {
@@ -86,11 +101,13 @@ namespace _0G.Legacy
 
         protected virtual void Update()
         {
-            if (!_timeThread.isPaused && _velocity != Vector2.zero)
+            if (!_timeThread.isPaused && Velocity != Vector3.zero)
             {
-                transform.Translate(_velocity * _timeThread.deltaTime, Space.World);
+                transform.Translate(Velocity * _timeThread.deltaTime, Space.World);
             }
         }
+
+        // MAIN METHODS
 
         private void OnHitboxTriggerEnter(Collider other)
         {
@@ -205,8 +222,7 @@ namespace _0G.Legacy
             {
                 Vector3 dir = _attackAbility.travelDirection.normalized;
                 float flipX = m_Body.FacingDirection == Direction.Left ? -1 : 1;
-                _velocity = new Vector2(flipX * dir.x * travelSpeed, dir.y * travelSpeed);
-                //TODO: support Z dimension
+                Velocity = new Vector3(flipX * dir.x * travelSpeed, dir.y * travelSpeed, dir.z * travelSpeed);
             }
 
             float attackDelay = _attackAbility.attackDelay;

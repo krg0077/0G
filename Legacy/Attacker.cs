@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -133,7 +133,7 @@ namespace _0G.Legacy
                         if (aaUse.doesInterrupt)
                         {
                             //try the attack; if successful, stop searching for attacks to try and just return
-                            if (TryAttack(aaUse))
+                            if (TryAttack(aaUse) != null)
                             {
                                 return;
                             }
@@ -148,11 +148,11 @@ namespace _0G.Legacy
             }
         }
 
-        protected virtual void AttackViaInputEzKey(int ezKey)
+        protected virtual Attack AttackViaInputEzKey(int ezKey)
         {
             var sig = _inputEzKeySigMap[ezKey];
             var aaUse = _availableAttacksBase[sig];
-            TryAttack(aaUse);
+            return TryAttack(aaUse);
         }
 
         protected virtual bool IsInputSignatureExecuted(InputSignature inputSig)
@@ -165,11 +165,11 @@ namespace _0G.Legacy
             return true;
         }
 
-        private bool TryAttack(AttackAbilityUse aaUse)
+        private Attack TryAttack(AttackAbilityUse aaUse)
         {
             Attack attack = aaUse.AttemptAttack();
-            //if the attack attempt failed, return FALSE...
-            if (attack == null) return false;
+            //if the attack attempt failed, return NULL...
+            if (attack == null) return null;
             //...otherwise, the attack attempt succeeded!
 
             //handle a main attack
@@ -194,8 +194,8 @@ namespace _0G.Legacy
                 RasterAnimation attackerAnimation = attack.attackAbility.GetRandomAttackerRasterAnimation();
                 GraphicController.SetAnimation(AnimationContext.Attack, attackerAnimation, OnAttackerAnimationEnd);
             }
-            //and since the attack attempt succeeded, return TRUE
-            return true;
+            //and since the attack attempt succeeded, return THE ATTACK
+            return attack;
         }
 
         protected void EndCurrentAttack(bool isCompleted)
@@ -226,7 +226,7 @@ namespace _0G.Legacy
             {
                 var aaUse = _queuedAttack;
                 _queuedAttack = null;
-                if (TryAttack(aaUse))
+                if (TryAttack(aaUse) != null)
                 {
                     return;
                 }
