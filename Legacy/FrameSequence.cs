@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using UnityEngine;
@@ -25,7 +25,7 @@ namespace _0G.Legacy
         class FrameCommand
         {
             public bool isNumber, isExtender, isRange, isSeparator; // TODO: make this an enum
-            public int number, times = 1;
+            public int[] numbers;
         }
 
         // SERIALIZED FIELDS
@@ -310,6 +310,7 @@ namespace _0G.Legacy
             if (_number.Length > 0) FlushNumberToFrameCommands();
             ProcessFrameCommandExtenders();
             ProcessFrameCommandRanges();
+            FlushCommandsToFrameList();
             _frameCount = _frameList.Count;
             _interpretedFrames = ListToString(_frameList);
         }
@@ -318,13 +319,14 @@ namespace _0G.Legacy
         {
             if (_number.Length > 0)
             {
-                _frameCommands.Enqueue(new FrameCommand { isNumber = true, number = int.Parse(_number.ToString()) });
-                _number = new StringBuilder();
+                int[] numbers = new int[] { int.Parse(_number.ToString()) };
+                _frameCommands.Enqueue(new FrameCommand { isNumber = true, numbers = numbers });
+                _number.Clear();
             }
             else
             {
                 Error("Did you forget a number before/after a symbol?" +
-                    " Number string is null or empty in AddNumberToCommands.");
+                    " Number string is empty in FlushNumberToFrameCommands.");
             }
         }
 
@@ -340,7 +342,23 @@ namespace _0G.Legacy
                 {
                     if (IsBinaryOperator(prev, q, out next))
                     {
-                        prev.times *= next.number;
+                        int oldLen = prev.numbers.Length;
+                        int times = next.numbers[0];
+                        int newLen = oldLen * times + (next.numbers.Length - 1); // parens contain remainder
+                        int[] numbers = new int[newLen];
+                        int pos = 0;
+                        for (int i = 0; i < times; ++i)
+                        {
+                            for (int j = 0; j < oldLen; ++j)
+                            {
+                                numbers[pos++] = prev.numbers[j];
+                            }
+                        }
+                        for (int k = 1; k < next.numbers.Length; ++k) // process remainder
+                        {
+                            numbers[pos++] = next.numbers[k];
+                        }
+                        prev.numbers = numbers;
                     }
                 }
                 else
@@ -355,7 +373,7 @@ namespace _0G.Legacy
         private void ProcessFrameCommandRanges()
         {
             var q = _frameCommands; // the original queue of frame commands
-            // this is the last process, so we're gonna affect the original queue this time
+            _frameCommands = new Queue<FrameCommand>(); // the new, processed queue of frame commands
             FrameCommand prev = null, curr, next; // previous, current, next
             while (q.Count > 0)
             {
@@ -364,14 +382,14 @@ namespace _0G.Legacy
                 {
                     if (IsBinaryOperator(prev, q, out next))
                     {
-                        AddFramesToList(prev, next);
+                        AddFrameRangeToCommands(prev, next);
                         prev = next;
                     }
                 }
                 else if (curr.isNumber)
                 {
                     // this will normally be done first, before curr.isRange or curr.isSeparator
-                    AddFrameToList(curr);
+                    _frameCommands.Enqueue(curr);
                     prev = curr;
                 }
                 else if (curr.isSeparator)
@@ -381,8 +399,27 @@ namespace _0G.Legacy
                 }
                 else
                 {
-                    Error("Unrecognized symbol. Should only be a number," +
+                    Error("Unrecognized command. Should only be a number," +
                         " an extender (x), a range dash (-), or a separator comma (,).");
+                }
+            }
+        }
+
+        private void FlushCommandsToFrameList()
+        {
+            var q = _frameCommands; // the original queue of frame commands
+            // this is the last process, so we're gonna affect the original queue this time
+            FrameCommand curr; // current
+            while (q.Count > 0)
+            {
+                curr = q.Dequeue();
+                if (curr.isNumber)
+                {
+                    _frameList.AddRange(curr.numbers);
+                }
+                else
+                {
+                    Error("Unrecognized command. Should only be a number.");
                 }
             }
         }
@@ -414,29 +451,33 @@ namespace _0G.Legacy
             return true;
         }
 
-        private void AddFramesToList(FrameCommand fromEx, FrameCommand toIncl) // _from_ exclusive, _to_ inclusive
+        private void AddFrameRangeToCommands(FrameCommand fromEx, FrameCommand toIncl) // _from_ exclusive, _to_ inclusive
         {
-            if (fromEx.number == toIncl.number)
+            // _from_ has already been added; we only need it as a starting point
+            int from = fromEx.numbers[fromEx.numbers.Length - 1];
+            int to = toIncl.numbers[0];
+            if (from == to)
             {
                 Error("Same _from_ and _to_. Ignoring second number. Use a comma if you want it twice.");
                 return;
             }
             // add all the numbers between _from_ and _to_
-            if (fromEx.number < toIncl.number)
+            if (from < to)
             {
-                for (int i = fromEx.number + 1; i < toIncl.number; ++i) _frameList.Add(i);
+                for (int i = from + 1; i < to; ++i) AddFrameNumberToCommands(i);
             }
             else
             {
-                for (int i = fromEx.number - 1; i > toIncl.number; --i) _frameList.Add(i);
+                for (int i = from - 1; i > to; --i) AddFrameNumberToCommands(i);
             }
-            // and then add _to_ using its specified _times_ (this way we can process e.g. 1-5x0 as 1,2,3,4)
-            AddFrameToList(toIncl);
+            // and then add _to_
+            _frameCommands.Enqueue(toIncl);
         }
 
-        private void AddFrameToList(FrameCommand c)
+        private void AddFrameNumberToCommands(int n) // TODO: this can be optimized
         {
-            while (c.times-- > 0) _frameList.Add(c.number);
+            int[] numbers = new int[] { n };
+            _frameCommands.Enqueue(new FrameCommand { isNumber = true, numbers = numbers });
         }
 
         private void Error(string message)
