@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using UnityEngine;
@@ -24,8 +24,9 @@ namespace _0G.Legacy
 
         class FrameCommand
         {
-            public bool isNumber, isExtender, isRange, isSeparator; // TODO: make this an enum
+            public bool isNumber, isGroupBegin, isGroupEnd, isExtender, isRange, isSeparator; // TODO: make this an enum
             public int[] numbers;
+            public int depth;
         }
 
         // SERIALIZED FIELDS
@@ -268,6 +269,7 @@ namespace _0G.Legacy
             _frames = _frames?.Trim() ?? "";
             if (_frames == "") return;
             char c;
+            int depth = 0, maxDepth = 0;
             for (int i = 0; i < _frames.Length; ++i)
             {
                 c = _frames[i];
@@ -292,6 +294,15 @@ namespace _0G.Legacy
                             Error("A number exceeds the max length: " + _number + "...");
                         }
                         break;
+                    case '(':
+                        FlushNumberToFrameCommands();
+                        _frameCommands.Enqueue(new FrameCommand { isGroupBegin = true, depth = ++depth });
+                        maxDepth = Mathf.Max(depth, maxDepth);
+                        break;
+                    case ')':
+                        FlushNumberToFrameCommands();
+                        _frameCommands.Enqueue(new FrameCommand { isGroupEnd = true, depth = depth-- });
+                        break;
                     case 'x':
                         FlushNumberToFrameCommands();
                         _frameCommands.Enqueue(new FrameCommand { isExtender = true });
@@ -307,9 +318,12 @@ namespace _0G.Legacy
                         break;
                 }
             }
-            if (_number.Length > 0) FlushNumberToFrameCommands();
-            ProcessFrameCommandExtenders();
-            ProcessFrameCommandRanges();
+            FlushNumberToFrameCommands();
+            for (int d = maxDepth; d >= 0; --d)
+            {
+                ProcessFrameCommandExtenders(d);
+                ProcessFrameCommandRanges(d);
+            }
             FlushCommandsToFrameList();
             _frameCount = _frameList.Count;
             _interpretedFrames = ListToString(_frameList);
@@ -323,22 +337,44 @@ namespace _0G.Legacy
                 _frameCommands.Enqueue(new FrameCommand { isNumber = true, numbers = numbers });
                 _number.Clear();
             }
-            else
-            {
-                Error("Did you forget a number before/after a symbol?" +
-                    " Number string is empty in FlushNumberToFrameCommands.");
-            }
         }
 
-        private void ProcessFrameCommandExtenders()
+        private void ProcessFrameCommandExtenders(int depth)
         {
             var q = _frameCommands; // the original queue of frame commands
             _frameCommands = new Queue<FrameCommand>(); // the new, processed queue of frame commands
             FrameCommand prev = null, curr, next; // previous, current, next
+            bool inDepth = depth == 0;
             while (q.Count > 0)
             {
                 curr = q.Dequeue();
-                if (curr.isExtender)
+                if (curr.isGroupBegin && curr.depth >= depth)
+                {
+                    if (curr.depth == depth)
+                    {
+                        inDepth = true;
+                        _frameCommands.Enqueue(curr);
+                        prev = null;
+                    }
+                    else
+                    {
+                        // do nothing; dispose of curr (group command)
+                    }
+                }
+                else if (curr.isGroupEnd && curr.depth >= depth)
+                {
+                    if (curr.depth == depth)
+                    {
+                        inDepth = false;
+                        _frameCommands.Enqueue(curr);
+                        prev = null;
+                    }
+                    else
+                    {
+                        // do nothing; dispose of curr (group command)
+                    }
+                }
+                else if (curr.isExtender && inDepth)
                 {
                     if (IsBinaryOperator(prev, q, out next))
                     {
@@ -359,48 +395,110 @@ namespace _0G.Legacy
                             numbers[pos++] = next.numbers[k];
                         }
                         prev.numbers = numbers;
+                        // keep the updated prev; dispose of curr (extender command) and next
                     }
                 }
                 else
                 {
-                    // this will normally be done first, before curr.isExtender
                     _frameCommands.Enqueue(curr);
                     prev = curr;
                 }
             }
         }
 
-        private void ProcessFrameCommandRanges()
+        private void ProcessFrameCommandRanges(int depth)
         {
             var q = _frameCommands; // the original queue of frame commands
             _frameCommands = new Queue<FrameCommand>(); // the new, processed queue of frame commands
             FrameCommand prev = null, curr, next; // previous, current, next
+            bool inDepth = depth == 0;
             while (q.Count > 0)
             {
                 curr = q.Dequeue();
-                if (curr.isRange)
+                if (curr.isGroupBegin && curr.depth >= depth)
+                {
+                    if (curr.depth == depth)
+                    {
+                        inDepth = true;
+                        _frameCommands.Enqueue(curr);
+                        prev = null;
+                    }
+                    else
+                    {
+                        // do nothing; dispose of curr (group command)
+                    }
+                }
+                else if (curr.isGroupEnd && curr.depth >= depth)
+                {
+                    if (curr.depth == depth)
+                    {
+                        inDepth = false;
+                        _frameCommands.Enqueue(curr);
+                        prev = null;
+                    }
+                    else
+                    {
+                        // do nothing; dispose of curr (group command)
+                    }
+                }
+                else if (curr.isRange && inDepth)
                 {
                     if (IsBinaryOperator(prev, q, out next))
                     {
-                        AddFrameRangeToCommands(prev, next);
-                        prev = next;
+                        int from = prev.numbers[prev.numbers.Length - 1];
+                        int to = next.numbers[0];
+                        if (from == to)
+                        {
+                            Error("Same _from_ and _to_. Ignoring second number. Use a comma if you want it twice.");
+                            return;
+                        }
+                        int midLen = Mathf.Abs(from - to) - 1;
+                        int newLen = prev.numbers.Length + midLen + next.numbers.Length;
+                        int[] numbers = new int[newLen];
+                        int pos = 0;
+                        for (int i = 0; i < prev.numbers.Length; ++i)
+                        {
+                            numbers[pos++] = prev.numbers[i];
+                        }
+                        if (from < to)
+                        {
+                            for (int j = from + 1; j < to; ++j) numbers[pos++] = j;
+                        }
+                        else
+                        {
+                            for (int j = from - 1; j > to; --j) numbers[pos++] = j;
+                        }
+                        for (int k = 0; k < next.numbers.Length; ++k)
+                        {
+                            numbers[pos++] = next.numbers[k];
+                        }
+                        prev.numbers = numbers;
+                        // keep the updated prev; dispose of curr (range command) and next
                     }
                 }
-                else if (curr.isNumber)
+                else if (curr.isSeparator && inDepth)
                 {
-                    // this will normally be done first, before curr.isRange or curr.isSeparator
-                    _frameCommands.Enqueue(curr);
-                    prev = curr;
-                }
-                else if (curr.isSeparator)
-                {
-                    // do nothing
-                    prev = null;
+                    if (IsBinaryOperator(prev, q, out next))
+                    {
+                        int newLen = prev.numbers.Length + next.numbers.Length;
+                        int[] numbers = new int[newLen];
+                        int pos = 0;
+                        for (int i = 0; i < prev.numbers.Length; ++i)
+                        {
+                            numbers[pos++] = prev.numbers[i];
+                        }
+                        for (int k = 0; k < next.numbers.Length; ++k)
+                        {
+                            numbers[pos++] = next.numbers[k];
+                        }
+                        prev.numbers = numbers;
+                        // keep the updated prev; dispose of curr (separator command) and next
+                    }
                 }
                 else
                 {
-                    Error("Unrecognized command. Should only be a number," +
-                        " an extender (x), a range dash (-), or a separator comma (,).");
+                    _frameCommands.Enqueue(curr);
+                    prev = curr;
                 }
             }
         }
@@ -449,35 +547,6 @@ namespace _0G.Legacy
                 return false;
             }
             return true;
-        }
-
-        private void AddFrameRangeToCommands(FrameCommand fromEx, FrameCommand toIncl) // _from_ exclusive, _to_ inclusive
-        {
-            // _from_ has already been added; we only need it as a starting point
-            int from = fromEx.numbers[fromEx.numbers.Length - 1];
-            int to = toIncl.numbers[0];
-            if (from == to)
-            {
-                Error("Same _from_ and _to_. Ignoring second number. Use a comma if you want it twice.");
-                return;
-            }
-            // add all the numbers between _from_ and _to_
-            if (from < to)
-            {
-                for (int i = from + 1; i < to; ++i) AddFrameNumberToCommands(i);
-            }
-            else
-            {
-                for (int i = from - 1; i > to; --i) AddFrameNumberToCommands(i);
-            }
-            // and then add _to_
-            _frameCommands.Enqueue(toIncl);
-        }
-
-        private void AddFrameNumberToCommands(int n) // TODO: this can be optimized
-        {
-            int[] numbers = new int[] { n };
-            _frameCommands.Enqueue(new FrameCommand { isNumber = true, numbers = numbers });
         }
 
         private void Error(string message)
