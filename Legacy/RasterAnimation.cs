@@ -221,16 +221,10 @@ namespace _0G.Legacy
             return fs?.PreSequenceActions;
         }
 
-        public virtual AudioPlayStyle GetFrameSequenceAudioPlayStyle(int frameSequenceIndex)
+        public virtual List<FrameSequence.AudioTrigger> GetFrameSequenceAudioTriggers(int frameSequenceIndex)
         {
             FrameSequence fs = GetFrameSequence(frameSequenceIndex);
-            return fs?.AudioPlayStyle ?? AudioPlayStyle.None;
-        }
-
-        public virtual string GetFrameSequenceAudioEvent(int frameSequenceIndex)
-        {
-            FrameSequence fs = GetFrameSequence(frameSequenceIndex);
-            return fs?.AudioEvent;
+            return fs?.AudioTriggers;
         }
 
         protected virtual FrameSequence GetFrameSequence(int frameSequenceIndex)

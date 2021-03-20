@@ -15,7 +15,7 @@ namespace _0G.Legacy
     {
         // CONSTANTS
 
-        public const int VERSION = 5;
+        public const int VERSION = 6;
 
         public const int INFINITE_PLAY_COUNT = 100;
         public const int NUMBER_MAX_LENGTH = 3;
@@ -27,6 +27,19 @@ namespace _0G.Legacy
             public bool isNumber, isGroupBegin, isGroupEnd, isExtender, isRange, isSeparator; // TODO: make this an enum
             public int[] numbers;
             public int depth;
+        }
+
+        [System.Serializable]
+        public class AudioTrigger
+        {
+            [AudioEvent, Tooltip("Audio event to play upon running this sequence.")]
+            public string AudioEvent = default;
+
+            [Tooltip("Audio play style, as applicable.")]
+            public AudioPlayStyle PlayStyle = AudioPlayStyle.PlayEachIteration;
+
+            [Tooltip("Wait X frames before playing this audio.")]
+            public int FrameDelay = default;
         }
 
         // SERIALIZED FIELDS
@@ -85,19 +98,11 @@ namespace _0G.Legacy
         private RangeInt _playCount = new RangeInt();
 
 #if ODIN_INSPECTOR
-        [FoldoutGroup("$DataSummary")]
+        [FoldoutGroup("$DataSummary", expanded: false)]
 #endif
         [SerializeField]
-        [Tooltip("Audio play style, as applicable.")]
-        private AudioPlayStyle _audioPlayStyle = default;
-
-#if ODIN_INSPECTOR
-        [FoldoutGroup("$DataSummary")]
-#endif
-        [SerializeField]
-        [Tooltip("Audio event to play upon running this sequence.")]
-        [AudioEvent]
-        private string _audioEvent = default;
+        [Tooltip("Audio events to play during this sequence.")]
+        private List<AudioTrigger> _audioTriggers = new List<AudioTrigger>();
 
         // DEPRECATED SERIALIZED FIELDS
 
@@ -125,6 +130,14 @@ namespace _0G.Legacy
         [FormerlySerializedAs("_toFrame"), FormerlySerializedAs("m_toFrame")]
         private RangeInt m_ObsoleteToFrame = new RangeInt();
 
+        [HideInInspector, SerializeField]
+        [FormerlySerializedAs("_audioEvent")]
+        private string m_ObsoleteAudioEvent = default;
+
+        [HideInInspector, SerializeField]
+        [FormerlySerializedAs("_audioPlayStyle")]
+        private AudioPlayStyle m_ObsoleteAudioPlayStyle = default;
+
         // FIELDS: PRIVATE / ConvertFramesToFrameList
 
         private Queue<FrameCommand> _frameCommands = new Queue<FrameCommand>();
@@ -151,9 +164,7 @@ namespace _0G.Legacy
 
         public List<int> PreSequenceActions => _preSequenceActions;
 
-        public AudioPlayStyle AudioPlayStyle => _audioPlayStyle;
-
-        public string AudioEvent => _audioEvent;
+        public List<AudioTrigger> AudioTriggers => _audioTriggers;
 
         // METHODS: PUBLIC
 
@@ -253,6 +264,27 @@ namespace _0G.Legacy
                         break;
                     case 4:
                         // no change
+                        break;
+                    case 5:
+                        if (!string.IsNullOrWhiteSpace(m_ObsoleteAudioEvent))
+                        {
+                            // fix for playback when using RasterAnimationLoopMode.LoopSequence
+                            if (m_ObsoleteAudioPlayStyle == AudioPlayStyle.PlayOnce
+                                && _playCount.minValue == 1 && _playCount.minInclusive
+                                && _playCount.maxValue == 1 && _playCount.maxInclusive
+                                )
+                            {
+                                m_ObsoleteAudioPlayStyle = AudioPlayStyle.PlayEachIteration;
+                            }
+                            // convert to new format
+                            _audioTriggers.Add(new AudioTrigger
+                            {
+                                AudioEvent = m_ObsoleteAudioEvent,
+                                PlayStyle = m_ObsoleteAudioPlayStyle,
+                            });
+                        }
+                        m_ObsoleteAudioEvent = null;
+                        m_ObsoleteAudioPlayStyle = AudioPlayStyle.None;
                         break;
                 }
                 ++_serializedVersion;

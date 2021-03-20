@@ -18,10 +18,10 @@ namespace _0G.Legacy
         // EVENTS
 
         public event AnimationEndHandler AnimationEnded;
-        public event RasterAnimationHandler FrameSequenceStarted;
-        public event RasterAnimationHandler FrameSequenceStopped;
-        public event RasterAnimationHandler FrameSequencePlayLoopStarted;
-        public event RasterAnimationHandler FrameSequencePlayLoopStopped;
+        public event RasterAnimationState.StateHandler FrameSequenceStarted;
+        public event RasterAnimationState.StateHandler FrameSequenceStopped;
+        public event RasterAnimationState.StateHandler FrameSequencePlayLoopStarted;
+        public event RasterAnimationState.StateHandler FrameSequencePlayLoopStopped;
 
         // SERIALIZED FIELDS
 
@@ -218,6 +218,8 @@ namespace _0G.Legacy
 
             RemoveCharacterStateHandlers();
 
+            UnloadRasterAnimationState();
+
             DestroyGeneratedTextures();
 
             if (G.U.IsPlayMode(this))
@@ -412,8 +414,7 @@ namespace _0G.Legacy
                     FrameSequencePlayLoopStopHandler = OnFrameSequencePlayLoopStop,
                     InfiniteLoopReplacement = m_Body != null && m_Body.IsGalleryAnimation ? 3 : 0,
                 };
-                m_RasterAnimationState = new RasterAnimationState(rasterAnimation, options);
-                m_RasterAnimationState.SetLoopMode(m_RasterAnimationLoopMode);
+                LoadNewRasterAnimationState(rasterAnimation, options);
                 m_AnimationImageIndex = m_RasterAnimationState.frameSequenceFromFrame - 1; // 1-based -> 0-based
             }
 
@@ -588,6 +589,12 @@ namespace _0G.Legacy
             FrameSequencePlayLoopStopped?.Invoke(state);
         }
 
+        private void OnFrameSequenceAudioTriggered(FrameSequence.AudioTrigger audioTrigger)
+        {
+            Vector3 position = m_Body != null ? m_Body.CenterTransform.position : transform.position;
+            G.audio.PlaySFX(audioTrigger.AudioEvent, position);
+        }
+
         protected virtual void OnAnimationClear() { }
 
         protected virtual void OnAnimationSet() { }
@@ -605,6 +612,25 @@ namespace _0G.Legacy
             if (m_AnimationContext == AnimationContext.None && reassessState)
             {
                 OnCharacterStateChange(0, false);
+            }
+        }
+
+        // RASTER ANIMATION STATE METHODS
+
+        private void LoadNewRasterAnimationState(RasterAnimation rasterAnimation, RasterAnimationOptions options)
+        {
+            UnloadRasterAnimationState();
+            m_RasterAnimationState = new RasterAnimationState(rasterAnimation, options);
+            m_RasterAnimationState.FrameSequenceAudioTriggered += OnFrameSequenceAudioTriggered;
+            m_RasterAnimationState.SetLoopMode(m_RasterAnimationLoopMode);
+        }
+
+        private void UnloadRasterAnimationState()
+        {
+            if (m_RasterAnimationState != null)
+            {
+                m_RasterAnimationState.FrameSequenceAudioTriggered -= OnFrameSequenceAudioTriggered;
+                m_RasterAnimationState = null;
             }
         }
 
@@ -752,8 +778,7 @@ namespace _0G.Legacy
         {
             if (m_StandaloneAnimation == null) return;
             SetAnimation(m_AnimationContext, m_StandaloneAnimation);
-            m_RasterAnimationState = new RasterAnimationState(m_StandaloneAnimation, options);
-            m_RasterAnimationState.SetLoopMode(m_RasterAnimationLoopMode);
+            LoadNewRasterAnimationState(m_StandaloneAnimation, options);
             m_AnimationImageIndex = m_RasterAnimationState.frameSequenceFromFrame - 1; // 1-based -> 0-based
         }
 

@@ -1,31 +1,42 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace _0G.Legacy
 {
     public class RasterAnimationState
     {
+        // DELEGATES
+
+        public delegate void StateHandler(RasterAnimationState ras);
+
+        public delegate void AudioHandler(FrameSequence.AudioTrigger audioTrigger);
+
         // EVENTS
 
         /// <summary>
         /// Occurs when a frame sequence starts.
         /// </summary>
-        public event RasterAnimationHandler FrameSequenceStarted;
+        public event StateHandler FrameSequenceStarted;
 
         /// <summary>
         /// Occurs when a frame sequence stops.
         /// </summary>
-        public event RasterAnimationHandler FrameSequenceStopped;
+        public event StateHandler FrameSequenceStopped;
 
         /// <summary>
         /// Occurs when a frame sequence starts or after the play index is incremented.
         /// </summary>
-        public event RasterAnimationHandler FrameSequencePlayLoopStarted;
+        public event StateHandler FrameSequencePlayLoopStarted;
 
         /// <summary>
         /// Occurs when a frame sequence stops or before the play index is incremented.
         /// </summary>
-        public event RasterAnimationHandler FrameSequencePlayLoopStopped;
+        public event StateHandler FrameSequencePlayLoopStopped;
+
+        /// <summary>
+        /// Occurs when a frame sequence audio trigger is ready to play.
+        /// </summary>
+        public event AudioHandler FrameSequenceAudioTriggered;
 
         // FIELDS
 
@@ -83,9 +94,7 @@ namespace _0G.Legacy
 
         public List<int> FrameSequencePreActions { get; private set; }
 
-        public AudioPlayStyle FrameSequenceAudioPlayStyle { get; private set; }
-
-        public string FrameSequenceAudioEvent { get; private set; }
+        public List<FrameSequence.AudioTrigger> FrameSequenceAudioTriggers { get; private set; }
 
         // CONSTRUCTOR
 
@@ -108,7 +117,7 @@ namespace _0G.Legacy
         /// Advances the frame number.
         /// </summary>
         /// <returns><c>true</c>, if the animation should continue playing, <c>false</c> otherwise.</returns>
-        /// <param name="frameListIndex">Frame list index.</param>
+        /// <param name="frameListIndex">The index for the array containing the list of frame numbers.</param>
         /// <param name="frameNumber">Frame number (one-based).</param>
         public virtual bool AdvanceFrame(ref int frameListIndex, out int frameNumber)
         {
@@ -146,6 +155,7 @@ namespace _0G.Legacy
                 //the animation has finished playing
                 return false;
             }
+            OnFrameChanged(frameListIndex);
             return true;
         }
 
@@ -154,7 +164,7 @@ namespace _0G.Legacy
         /// NOTE: This is all copied from AdvanceFrame(...)
         /// </summary>
         /// <returns><c>true</c>, if the animation should continue playing, <c>false</c> otherwise.</returns>
-        /// <param name="frameListIndex">Frame list index.</param>
+        /// <param name="frameListIndex">The index for the array containing the list of frame numbers.</param>
         /// <param name="frameNumber">Frame number (one-based).</param>
         public virtual bool AdvanceFrameSequence(ref int frameListIndex, out int frameNumber)
         {
@@ -180,6 +190,7 @@ namespace _0G.Legacy
                 //the animation has finished playing
                 return false;
             }
+            OnFrameChanged(frameListIndex);
             return true;
         }
 
@@ -188,7 +199,7 @@ namespace _0G.Legacy
         /// NOTE: It will wrap around the animation to check earilier frame sequences as well.
         /// </summary>
         /// <param name="actionId">The specified pre-action ID.</param>
-        /// <param name="frameListIndex">Frame list index.</param>
+        /// <param name="frameListIndex">The index for the array containing the list of frame numbers.</param>
         /// <param name="frameNumber">Frame number (one-based).</param>
         /// <returns><c>true</c>, if this operation was successful, <c>false</c> otherwise.</returns>
         public virtual bool GoToFrameSequenceWithPreAction(int actionId, ref int frameListIndex, out int frameNumber)
@@ -205,6 +216,7 @@ namespace _0G.Legacy
                         SetFrameSequence(i);
                         fListIndex = 0;
                         fNumber = _frameSequenceFrameList[0];
+                        OnFrameChanged(fListIndex);
                         return true;
                     }
                 }
@@ -226,6 +238,7 @@ namespace _0G.Legacy
         public void Reset()
         {
             SetFrameSequence(0);
+            OnFrameChanged(0);
         }
 
         public void SetLoopMode(RasterAnimationLoopMode loopMode) => _loopMode = loopMode;
@@ -273,8 +286,7 @@ namespace _0G.Legacy
             _frameSequencePlayCount = playCount;
             _frameSequencePlayIndex = 0;
             FrameSequencePreActions = _rasterAnimation.GetFrameSequencePreActions(frameSequenceIndex);
-            FrameSequenceAudioPlayStyle = _rasterAnimation.GetFrameSequenceAudioPlayStyle(frameSequenceIndex);
-            FrameSequenceAudioEvent = _rasterAnimation.GetFrameSequenceAudioEvent(frameSequenceIndex);
+            FrameSequenceAudioTriggers = _rasterAnimation.GetFrameSequenceAudioTriggers(frameSequenceIndex);
             InvokeFrameSequenceStartHandlers();
         }
 
@@ -307,6 +319,22 @@ namespace _0G.Legacy
             }
         }
 
+        private bool CheckPlayAudio(FrameSequence.AudioTrigger audioTrigger)
+        {
+            switch (audioTrigger.PlayStyle)
+            {
+                case AudioPlayStyle.None:
+                    return false;
+                case AudioPlayStyle.PlayOnce:
+                    return _frameSequencePlayIndex == 0;
+                case AudioPlayStyle.PlayEachIteration:
+                    return true;
+                default:
+                    G.U.Unsupported(this, audioTrigger.PlayStyle);
+                    return false;
+            }
+        }
+
         private void InvokeFrameSequenceStartHandlers()
         {
             FrameSequenceStarted?.Invoke(this);
@@ -317,6 +345,19 @@ namespace _0G.Legacy
         {
             FrameSequencePlayLoopStopped?.Invoke(this);
             FrameSequenceStopped?.Invoke(this);
+        }
+
+        private void OnFrameChanged(int frameListIndex)
+        {
+            //play audio as needed
+            for (int i = 0; i < FrameSequenceAudioTriggers.Count; ++i)
+            {
+                FrameSequence.AudioTrigger audioTrigger = FrameSequenceAudioTriggers[i];
+                if (CheckPlayAudio(audioTrigger) && audioTrigger.FrameDelay == frameListIndex)
+                {
+                    FrameSequenceAudioTriggered?.Invoke(audioTrigger);
+                }
+            }
         }
     }
 }
