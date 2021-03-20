@@ -133,7 +133,7 @@ namespace _0G.Legacy
             Init();
         }
 
-        protected virtual void OnValidate() // UNITY EDITOR only
+        public virtual void OnValidate() // UNITY EDITOR only
         {
             Init();
         }
