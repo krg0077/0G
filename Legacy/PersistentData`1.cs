@@ -47,6 +47,28 @@ namespace _0G.Legacy
             Initialized?.Invoke(this);
         }
 
+        public PersistentData(
+            Persist persist,
+            string key)
+        {
+            Persist = persist;
+            Key = key;
+            Type = typeof(T);
+            m_Value = default(T);
+
+            G.DoPlayerPrefsAction(SetStoredInPlayerPrefs);
+
+            switch (Persist)
+            {
+                case Persist.PlayerPrefs:
+                case Persist.PlayerPrefs_Overwrite:
+                    ValueChanged += WriteToPlayerPrefs;
+                    break;
+            }
+
+            Initialized?.Invoke(this);
+        }
+
         ~PersistentData()
         {
             Disposed?.Invoke(this);
@@ -86,7 +108,24 @@ namespace _0G.Legacy
             {
                 object oldValue = m_Value;
                 m_Value = value;
+                HasStoredValue = true;
                 ValueChanged?.Invoke(this, (T) oldValue, value);
+            }
+        }
+
+        public bool HasStoredValue { get; private set; }
+
+        /// <summary>
+        /// Only needed when using a type with no default, and a stored value exists.
+        /// </summary>
+        public void LoadValue()
+        {
+            switch (Persist)
+            {
+                case Persist.PlayerPrefs:
+                case Persist.PlayerPrefs_Overwrite:
+                    G.DoPlayerPrefsAction(ReadFromPlayerPrefs);
+                    break;
             }
         }
 
@@ -147,6 +186,13 @@ namespace _0G.Legacy
                     break;
             }
             ValueChanged?.Invoke(this, (T) oldValue, (T) m_Value);
+            IsReadingPlayerPrefs = false;
+        }
+
+        public void SetStoredInPlayerPrefs()
+        {
+            IsReadingPlayerPrefs = true;
+            HasStoredValue = PlayerPrefs.HasKey(Key);
             IsReadingPlayerPrefs = false;
         }
     }

@@ -23,6 +23,7 @@ namespace _0G.Legacy
         // CONSTANTS
 
         public const float DEFAULT_SPRITE_FPS = 20;
+        public const string SUFFIX = "_RasterAnimation";
 
         // SERIALIZED FIELDS
 
@@ -118,13 +119,15 @@ namespace _0G.Legacy
 
         public virtual TextAsset gifBytes { get { return _gifBytes; } }
 
+        public virtual bool HasElanicData => m_ElanicData != null;
+
         public virtual bool hasPlayableFrameSequences { get; private set; }
 
         public virtual List<Texture2D> Imprints => m_ElanicData.Imprints;
 
         public virtual int loopToSequence { get { return _loopToSequence; } }
 
-        public virtual bool UsesElanic => m_ElanicData != null;
+        public virtual bool UsesElanic => HasElanicData && G.gfx.TextureQuality == GraphicsTextureQuality.Lossless;
 
         // MONOBEHAVIOUR METHODS
 
@@ -305,12 +308,19 @@ namespace _0G.Legacy
                 Texture2D tex = m_FrameTextures[i];
                 currColors = tex.GetPixels32();
                 bool createImprint = false;
-                for (int j = 0; j < frameSequenceCount; ++j)
+                if (i == 0)
                 {
-                    if (i == _frameSequences[j].FrameList[0] - 1)
+                    createImprint = true;
+                }
+                else
+                {
+                    for (int j = 0; j < frameSequenceCount; ++j)
                     {
-                        createImprint = true;
-                        break;
+                        if (i == _frameSequences[j].FrameList[0] - 1)
+                        {
+                            createImprint = true;
+                            break;
+                        }
                     }
                 }
                 if (createImprint)
@@ -372,10 +382,8 @@ namespace _0G.Legacy
                         DiffPixelPosition = pixelPosition.ToArray(),
                         DiffPixelColorIndex = pixelColorIndex.ToArray(),
                     });
-                    // TODO: destroy m_FrameTextures asset on disk
                 }
             }
-            // TODO: m_FrameTextures.Clear();
             m_ElanicData = data;
         }
     }
