@@ -307,7 +307,7 @@ namespace _0G.Legacy
                 for (int i = 0; i < f.DiffPixelCount; ++i)
                 {
                     uint p = f.DiffPixelPosition[i];
-                    sbyte colorIndex = f.DiffPixelColorIndex[i];
+                    short colorIndex = f.DiffPixelColorIndex[i];
                     // negative numbers are compressed data
                     // positive numbers including 0 are standard data
                     if (colorIndex == -1)

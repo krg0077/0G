@@ -14,7 +14,7 @@ namespace _0G
         [HideInInspector]
         public uint[] DiffPixelPosition;
         [HideInInspector]
-        public sbyte[] DiffPixelColorIndex;
+        public short[] DiffPixelColorIndex;
 
 #if ODIN_INSPECTOR
         [ShowInInspector]

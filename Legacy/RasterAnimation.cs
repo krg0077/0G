@@ -332,26 +332,21 @@ namespace _0G.Legacy
                 else
                 {
                     List<uint> pixelPosition = new List<uint>();
-                    List<sbyte> pixelColorIndex = new List<sbyte>();
+                    List<short> pixelColorIndex = new List<short>();
                     for (int p = 0; p < currColors.Length; ++p)
                     {
                         Color32 c = currColors[p];
+                        // optimize transparent pixels
+                        if (c.a == 0) c = Color.clear;
+                        // check this pixel for a difference against the previous frame
                         if (!c.Equals(prevColors[p]))
                         {
                             // determine color index, adding color to table if needed
-                            int colorIndex;
-                            if (c.a == 0) // optimization
+                            int colorIndex = data.Colors.IndexOf(c);
+                            if (colorIndex < 0)
                             {
-                                colorIndex = 0;
-                            }
-                            else
-                            {
-                                colorIndex = data.Colors.IndexOf(c);
-                                if (colorIndex < 0)
-                                {
-                                    colorIndex = data.Colors.Count;
-                                    data.Colors.Add(c);
-                                }
+                                colorIndex = data.Colors.Count;
+                                data.Colors.Add(c);
                             }
                             // check the previous pixel's data in order to compress data
                             int pvi = pixelColorIndex.Count - 1;
@@ -373,7 +368,7 @@ namespace _0G.Legacy
                             }
                             // add the current pixel's data
                             pixelPosition.Add((uint)p);
-                            pixelColorIndex.Add((sbyte)colorIndex);
+                            pixelColorIndex.Add((short)colorIndex);
                         }
                     }
                     data.Frames.Add(new ElanicFrame
