@@ -107,6 +107,8 @@ namespace _0G.Legacy
 
         public virtual Vector2Int Dimensions => m_Dimensions;
 
+        public virtual ElanicData ElanicData => m_ElanicData;
+
         public virtual List<ElanicFrame> ElanicFrames => m_ElanicData.Frames;
 
         public virtual float FrameRate => m_SecondsPerFrame > 0 ? 1f / m_SecondsPerFrame : DEFAULT_SPRITE_FPS;
@@ -127,7 +129,7 @@ namespace _0G.Legacy
 
         public virtual int loopToSequence { get { return _loopToSequence; } }
 
-        public virtual bool UsesElanic => HasElanicData && G.gfx.TextureQuality == GraphicsTextureQuality.Lossless;
+        public virtual bool UsesElanic => HasElanicData && G.gfx.LosslessAnimations != GraphicsLosslessAnimations.Never;
 
         // MONOBEHAVIOUR METHODS
 

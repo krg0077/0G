@@ -2,39 +2,32 @@
 
 namespace _0G.Legacy
 {
-    public enum GraphicsTextureQuality { Standard, Lossless, }
+    public enum GraphicsLosslessAnimations { Never, GalleryOnly, Always, }
 
     public class GraphicsManager : Manager
     {
         public override float priority => 70;
 
-        protected PersistentData<int> m_TextureQuality = new PersistentData<int>(
-            Persist.PlayerPrefs, "0G.graphics.texture_quality");
+        protected PersistentData<int> m_LosslessAnimations = new PersistentData<int>(
+            Persist.PlayerPrefs, "0G.graphics.lossless_animations");
 
         /// <summary>
-        /// Get or set the texture quality.
+        /// Get or set if/when lossless (high quality) animations are enabled.
         /// </summary>
-        public GraphicsTextureQuality TextureQuality
+        public GraphicsLosslessAnimations LosslessAnimations
         {
-            get => (GraphicsTextureQuality)m_TextureQuality.Value;
-            set => m_TextureQuality.Value = (int)value;
+            get => (GraphicsLosslessAnimations)m_LosslessAnimations.Value;
+            set => m_LosslessAnimations.Value = (int)value;
         }
 
         public override void Awake()
         {
-            if (m_TextureQuality.HasStoredValue)
-            {
-                m_TextureQuality.LoadValue();
-            }
-            else
-            {
-                TextureQuality = GetDefaultTextureQuality();
-            }
+            m_LosslessAnimations.LoadValueOrSetDefault((int)GetDefaultLosslessAnimations());
         }
 
-        public static GraphicsTextureQuality GetDefaultTextureQuality()
+        public static GraphicsLosslessAnimations GetDefaultLosslessAnimations()
         {
-            return SystemInfo.systemMemorySize > 8000 ? GraphicsTextureQuality.Lossless : GraphicsTextureQuality.Standard;
+            return SystemInfo.systemMemorySize >= 8192 ? GraphicsLosslessAnimations.GalleryOnly : GraphicsLosslessAnimations.Never;
         }
     }
 }

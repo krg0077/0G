@@ -116,16 +116,23 @@ namespace _0G.Legacy
         public bool HasStoredValue { get; private set; }
 
         /// <summary>
-        /// Only needed when using a type with no default, and a stored value exists.
+        /// Only needed when using a type with no default.
         /// </summary>
-        public void LoadValue()
+        public void LoadValueOrSetDefault(T defaultValue)
         {
-            switch (Persist)
+            if (HasStoredValue)
             {
-                case Persist.PlayerPrefs:
-                case Persist.PlayerPrefs_Overwrite:
-                    G.DoPlayerPrefsAction(ReadFromPlayerPrefs);
-                    break;
+                switch (Persist)
+                {
+                    case Persist.PlayerPrefs:
+                    case Persist.PlayerPrefs_Overwrite:
+                        G.DoPlayerPrefsAction(ReadFromPlayerPrefs);
+                        break;
+                }
+            }
+            else
+            {
+                Value = defaultValue;
             }
         }
 

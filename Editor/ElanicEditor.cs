@@ -82,6 +82,9 @@ namespace _0G
                 if (imp == null)
                 {
                     _ = AssetDatabase.CopyAsset(texPath, impPath);
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                    EditorUtility.SetDirty(data);
                     imp = AssetDatabase.LoadAssetAtPath<Texture2D>(impPath);
                 }
                 data.Imprints[i] = imp;

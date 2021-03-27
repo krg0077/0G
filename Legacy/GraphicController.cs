@@ -144,6 +144,9 @@ namespace _0G.Legacy
 
         public bool IsAnimationPlaying => m_AnimationContext != AnimationContext.None;
 
+        protected virtual bool AnimationUsesElanic => RasterAnimation.UsesElanic &&
+            (m_Body.IsGalleryAnimation || G.gfx.LosslessAnimations == GraphicsLosslessAnimations.Always);
+
         protected virtual GameObject GraphicGameObject => m_Body?.Refs.GraphicGameObject ?? gameObject;
 
         protected virtual bool IsTimePaused => TimeThread.isPaused;
@@ -341,7 +344,7 @@ namespace _0G.Legacy
         {
             if (m_AnimationImageCount == 0) return;
             m_AnimationImageIndex = Mathf.Min(m_AnimationImageIndex, m_AnimationImageCount - 1);
-            if (RasterAnimation.UsesElanic && m_AnimationTextures[m_AnimationImageIndex] == null)
+            if (AnimationUsesElanic && m_AnimationTextures[m_AnimationImageIndex] == null) // TODO: still needed?
             {
                 PopulateElanicTexture(m_AnimationImageIndex);
             }
@@ -386,17 +389,17 @@ namespace _0G.Legacy
 
             OnAnimationClear();
 
+            RasterAnimation = rasterAnimation;
             m_AnimationCallback = callback;
             m_AnimationContext = context;
             m_AnimationFrameIndex = 0;
             m_AnimationFrameListIndex = 0;
-            m_AnimationImageCount = rasterAnimation.UsesElanic ? rasterAnimation.ElanicFrames.Count : rasterAnimation.FrameTextures.Count;
+            m_AnimationImageCount = AnimationUsesElanic ? rasterAnimation.ElanicFrames.Count : rasterAnimation.FrameTextures.Count;
             m_AnimationImageIndex = 0;
-            m_AnimationTextures = rasterAnimation.UsesElanic ? new Texture2D[m_AnimationImageCount] : rasterAnimation.FrameTextures.ToArray();
+            m_AnimationTextures = AnimationUsesElanic ? new Texture2D[m_AnimationImageCount] : rasterAnimation.FrameTextures.ToArray();
             m_AnimationTimeElapsed = 0;
-            RasterAnimation = rasterAnimation;
 
-            if (rasterAnimation.UsesElanic && m_Body.IsGalleryAnimation)
+            if (AnimationUsesElanic)
             {
                 for (int i = 0; i < m_AnimationImageCount; ++i)
                 {
@@ -461,7 +464,7 @@ namespace _0G.Legacy
 
         private void DestroyGeneratedTextures()
         {
-            if (RasterAnimation != null && RasterAnimation.UsesElanic)
+            if (RasterAnimation != null && AnimationUsesElanic)
             {
                 for (int i = 0; i < m_AnimationImageCount; ++i)
                 {
