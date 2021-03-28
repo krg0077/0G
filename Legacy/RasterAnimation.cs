@@ -185,9 +185,17 @@ namespace _0G.Legacy
         /// </summary>
         /// <returns><c>true</c>, if the raster animation is intended to loop, <c>false</c> otherwise.</returns>
         /// <param name="loopIndex">Loop index.</param>
-        public bool DoesLoop(int loopIndex)
+        /// <param name="advance">Advance? Else reverse.</param>
+        public bool DoesLoop(int loopIndex, bool advance)
         {
-            return _loop && (!_loopCount.boolValue || loopIndex < _loopCount.intValue);
+            if (advance)
+            {
+                return _loop && (!_loopCount.boolValue || loopIndex < _loopCount.intValue);
+            }
+            else
+            {
+                return _loop && (!_loopCount.boolValue || loopIndex >= 0);
+            }
         }
 
         public virtual string GetFrameSequenceName(int frameSequenceIndex)

@@ -526,44 +526,67 @@ namespace _0G.Legacy
 
         public void AdvanceImageIndex()
         {
-            // GraphicController uses zero-based image index (m_AnimationImageIndex)
-            // RasterAnimation uses one-based frame number (frameNumber)
-
-            if (!m_RasterAnimationState.AdvanceFrame(ref m_AnimationFrameListIndex, out int frameNumber))
+            if (m_RasterAnimationState.AdvanceFrame(
+                ref m_AnimationFrameListIndex, out int frameNumber))
+            {
+                // GraphicController uses zero-based image index (m_AnimationImageIndex)
+                // RasterAnimation uses one-based frame number (frameNumber)
+                m_AnimationImageIndex = frameNumber - 1;
+                RefreshAnimationImage();
+            }
+            else
             {
                 OnAnimationEnd(true);
-                return;
             }
+        }
 
-            m_AnimationImageIndex = frameNumber - 1;
+        public void ReverseImageIndex()
+        {
+            if (m_RasterAnimationState.ReverseFrame(
+                ref m_AnimationFrameListIndex, out int frameNumber))
+            {
+                // GraphicController uses zero-based image index (m_AnimationImageIndex)
+                // RasterAnimation uses one-based frame number (frameNumber)
+                m_AnimationImageIndex = frameNumber - 1;
+                RefreshAnimationImage();
+            }
         }
 
         public void AdvanceFrameSequence()
         {
-            // GraphicController uses zero-based image index (m_AnimationImageIndex)
-            // RasterAnimation uses one-based frame number (frameNumber)
-
-            if (!m_RasterAnimationState.AdvanceFrameSequence(ref m_AnimationFrameListIndex, out int frameNumber))
+            if (m_RasterAnimationState.AdvanceFrameSequence(
+                ref m_AnimationFrameListIndex, out int frameNumber))
+            {
+                // GraphicController uses zero-based image index (m_AnimationImageIndex)
+                // RasterAnimation uses one-based frame number (frameNumber)
+                m_AnimationImageIndex = frameNumber - 1;
+            }
+            else
             {
                 OnAnimationEnd(true);
-                return;
             }
+        }
 
-            m_AnimationImageIndex = frameNumber - 1;
+        public void ReverseFrameSequence()
+        {
+            if (m_RasterAnimationState.ReverseFrameSequence(
+                ref m_AnimationFrameListIndex, out int frameNumber))
+            {
+                // GraphicController uses zero-based image index (m_AnimationImageIndex)
+                // RasterAnimation uses one-based frame number (frameNumber)
+                m_AnimationImageIndex = frameNumber - 1;
+            }
         }
 
         public void GoToFrameSequenceWithPreAction(int actionId)
         {
-            // GraphicController uses zero-based image index (m_AnimationImageIndex)
-            // RasterAnimation uses one-based frame number (frameNumber)
-
-            if (!m_RasterAnimationState.GoToFrameSequenceWithPreAction(actionId, ref m_AnimationFrameListIndex, out int frameNumber))
+            if (m_RasterAnimationState.GoToFrameSequenceWithPreAction(
+                actionId, ref m_AnimationFrameListIndex, out int frameNumber))
             {
-                // do nothing
-                return;
+                // GraphicController uses zero-based image index (m_AnimationImageIndex)
+                // RasterAnimation uses one-based frame number (frameNumber)
+                m_AnimationImageIndex = frameNumber - 1;
             }
-
-            m_AnimationImageIndex = frameNumber - 1;
         }
 
         public void SetLoopMode(RasterAnimationLoopMode loopMode)
