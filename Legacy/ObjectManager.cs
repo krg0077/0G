@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -75,6 +75,7 @@ namespace _0G.Legacy
         {
             EnvironmentChart ec;
             bool doneUnloadingUnusedAssets = false;
+            bool loadElanicTextures = G.gfx.LosslessAnimations == GraphicsLosslessAnimations.Always;
 
             // unload all environment assets
             while (EnvironmentCharts.Count > 0)
@@ -84,6 +85,7 @@ namespace _0G.Legacy
                 UnloadDocket<EnvironmentChart>(id);
             }
 
+            // unload unused characters and load new characters
             foreach (var cc in CharacterCounts.OrderBy(cc => cc.Value))
             {
                 if (cc.Value == 0)
@@ -101,13 +103,18 @@ namespace _0G.Legacy
                     }
 
                     LoadAssetPack<CharacterDossier>(cc.Key);
+                    if (loadElanicTextures) LoadElanicTextures<CharacterDossier>(cc.Key);
                 }
             }
 
             // load environment assets
             int environmentID = G.env.CurrentEnvironmentID;
             ec = LoadDocket<EnvironmentChart>(environmentID);
-            if (ec != null) LoadAssetPack<EnvironmentChart>(environmentID);
+            if (ec != null)
+            {
+                LoadAssetPack<EnvironmentChart>(environmentID);
+                if (loadElanicTextures) LoadElanicTextures<EnvironmentChart>(environmentID);
+            }
         }
 
         // MAIN PUBLIC METHODS
@@ -375,7 +382,7 @@ namespace _0G.Legacy
                 .ToList();
             for (int i = 0; i < keysToRemove.Count; ++i)
             {
-                RasterAnimations.Remove(keysToRemove[i]);
+                RemoveAnimation(keysToRemove[i]);
             }
 
             // remove docket from dictionary; unload its bundle
@@ -421,6 +428,43 @@ namespace _0G.Legacy
             }
         }
 
+        private void LoadElanicTextures<T>(int id) where T : Docket
+        {
+            if (id == 0) return;
+
+            bool isCharacter = typeof(T) == typeof(CharacterDossier);
+            Docket dk = isCharacter ? (Docket)CharacterDossiers[id] : (Docket)EnvironmentCharts[id];
+
+            // load ELANIC textures for all of its animations
+            if (isCharacter)
+            {
+                GraphicData gd = ((CharacterDossier)dk).GraphicData;
+                // load textures for idle animation
+                string idleAnimName = gd.IdleAnimationName;
+                if (!string.IsNullOrWhiteSpace(idleAnimName) && RasterAnimations.ContainsKey(idleAnimName))
+                {
+                    RasterAnimation ra = RasterAnimations[idleAnimName];
+                    if (ra != null) ra.LoadTextures(true);
+                }
+                // load textures for state animations
+                foreach (StateAnimation sa in gd.StateAnimations)
+                {
+                    if (!RasterAnimations.ContainsKey(sa.animationName)) continue;
+                    RasterAnimation ra = RasterAnimations[sa.animationName];
+                    if (ra != null && ra.HasElanicData) ra.LoadTextures(true);
+                }
+            }
+            else
+            {
+                foreach (string animationName in ((EnvironmentChart)dk).AnimationNames)
+                {
+                    if (!RasterAnimations.ContainsKey(animationName)) continue;
+                    RasterAnimation ra = RasterAnimations[animationName];
+                    if (ra != null && ra.HasElanicData) ra.LoadTextures(true);
+                }
+            }
+        }
+
         private void UnloadAssetPack<T>(int id) where T : Docket
         {
             if (id == 0) return;
@@ -431,16 +475,25 @@ namespace _0G.Legacy
             // remove all remaining raster animations for this asset pack
             if (isCharacter)
             {
-                foreach (StateAnimation sa in ((CharacterDossier)dk).GraphicData.StateAnimations)
+                GraphicData gd = ((CharacterDossier)dk).GraphicData;
+                // unload textures for idle animation, in case it's using ELANIC, but don't remove it
+                string idleAnimName = gd.IdleAnimationName;
+                if (!string.IsNullOrWhiteSpace(idleAnimName) && RasterAnimations.ContainsKey(idleAnimName))
                 {
-                    RasterAnimations.Remove(sa.animationName);
+                    RasterAnimation ra = RasterAnimations[idleAnimName];
+                    if (ra != null) ra.UnloadTextures();
+                }
+                // remove state animations, unloading textures in the process
+                foreach (StateAnimation sa in gd.StateAnimations)
+                {
+                    RemoveAnimation(sa.animationName);
                 }
             }
             else
             {
                 foreach (string animationName in ((EnvironmentChart)dk).AnimationNames)
                 {
-                    RasterAnimations.Remove(animationName);
+                    RemoveAnimation(animationName);
                 }
             }
 
@@ -472,8 +525,10 @@ namespace _0G.Legacy
         /// you need to spawn a character dynamically.
         /// </summary>
         public void LoadCharacterAssetPack(int characterID) => LoadAssetPack<CharacterDossier>(characterID);
+        public void LoadCharacterElanicTextures(int characterID) => LoadElanicTextures<CharacterDossier>(characterID);
         public void UnloadCharacterAssetPack(int characterID) => UnloadAssetPack<CharacterDossier>(characterID);
         public void LoadEnvironmentAssetPack(int environmentID) => LoadAssetPack<EnvironmentChart>(environmentID);
+        public void LoadEnvironmentElanicTextures(int environmentID) => LoadElanicTextures<EnvironmentChart>(environmentID);
         public void UnloadEnvironmentAssetPack(int environmentID) => UnloadAssetPack<EnvironmentChart>(environmentID);
 
         // ANIMATION METHODS
@@ -519,8 +574,13 @@ namespace _0G.Legacy
 
         public void RemoveAnimation(string animationName)
         {
+            RasterAnimation ra;
+
+            // unload and remove animation as applicable
             if (RasterAnimations.ContainsKey(animationName))
             {
+                ra = RasterAnimations[animationName];
+                if (ra != null) ra.UnloadTextures();
                 RasterAnimations.Remove(animationName);
             }
         }

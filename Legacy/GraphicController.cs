@@ -56,8 +56,6 @@ namespace _0G.Legacy
 
         private TimeTrigger m_FlickerTimeTrigger;
 
-        private List<RasterAnimation> m_LoadedRasterAnimations;
-
         private Material m_Material;
 
         private ParticleSystem m_ParticleSystemRoot;
@@ -342,10 +340,6 @@ namespace _0G.Legacy
 
             RasterAnimation = rasterAnimation;
             rasterAnimation.LoadTextures(AnimationUsesElanic);
-            if (m_LoadedRasterAnimations != null && !m_LoadedRasterAnimations.Contains(rasterAnimation))
-            {
-                m_LoadedRasterAnimations.Add(rasterAnimation);
-            }
 
             m_AnimationCallback = callback;
             m_AnimationContext = context;
@@ -388,24 +382,6 @@ namespace _0G.Legacy
                 G.U.Err("Attempting to end animation context {0}, but current context is {1}.",
                     context, m_AnimationContext);
             }
-        }
-
-        public void TrackAnimationTextures()
-        {
-            m_LoadedRasterAnimations = new List<RasterAnimation>();
-            if (!string.IsNullOrWhiteSpace(IdleAnimationName) && G.obj.RasterAnimations.ContainsKey(IdleAnimationName))
-            {
-                m_LoadedRasterAnimations.Add(G.obj.RasterAnimations[IdleAnimationName]);
-            }
-        }
-
-        public void UnloadAnimationTextures()
-        {
-            foreach (var ra in m_LoadedRasterAnimations)
-            {
-                if (ra != null) ra.UnloadTextures();
-            }
-            m_LoadedRasterAnimations = null;
         }
 
         public void SetSharedMaterial(Material sharedMaterial)
