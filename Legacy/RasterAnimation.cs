@@ -103,13 +103,9 @@ namespace _0G.Legacy
 
         // PROPERTIES
 
-        public virtual List<Color32> Colors => m_ElanicData.Colors;
-
         public virtual Vector2Int Dimensions => m_Dimensions;
 
         public virtual ElanicData ElanicData => m_ElanicData;
-
-        public virtual List<ElanicFrame> ElanicFrames => m_ElanicData.Frames;
 
         public virtual float FrameRate => m_SecondsPerFrame > 0 ? 1f / m_SecondsPerFrame : DEFAULT_SPRITE_FPS;
 
@@ -125,11 +121,11 @@ namespace _0G.Legacy
 
         public virtual bool hasPlayableFrameSequences { get; private set; }
 
-        public virtual List<Texture2D> Imprints => m_ElanicData.Imprints;
+        public virtual bool IsUsingElanic { get; private set; }
 
         public virtual int loopToSequence { get { return _loopToSequence; } }
 
-        public virtual bool UsesElanic => HasElanicData && G.gfx.LosslessAnimations != GraphicsLosslessAnimations.Never;
+        public virtual Texture2D[] Textures { get; private set; }
 
         // MONOBEHAVIOUR METHODS
 
@@ -141,6 +137,11 @@ namespace _0G.Legacy
         public virtual void OnValidate() // UNITY EDITOR only
         {
             Init();
+        }
+
+        public virtual void OnDestroy()
+        {
+            UnloadTextures();
         }
 
         // PRIVATE METHODS
@@ -309,7 +310,9 @@ namespace _0G.Legacy
             m_FrameParagraph = "";
         }
 
-        public void ConvertToElanic(ElanicData data)
+        // ELANIC & TEXTURE METHODS
+
+        public void ConvertToElanic(ElanicData data) // ELANIC: Experimental Lossless Animation Compression
         {
             data.Colors.Add(Color.clear); // color index 0
             Color32[] currColors, prevColors = null;
@@ -390,6 +393,92 @@ namespace _0G.Legacy
                 }
             }
             m_ElanicData = data;
+        }
+
+        public void LoadTextures(bool usesElanic)
+        {
+            if (Textures != null && IsUsingElanic != usesElanic)
+            {
+                UnloadTextures();
+            }
+            if (Textures == null || Textures.Length == 0) // TODO: seems length is 0 sometimes; why?
+            {
+                IsUsingElanic = usesElanic;
+                int count = usesElanic ? m_ElanicData.Frames.Count : m_FrameTextures.Count;
+                Textures = new Texture2D[count];
+                if (usesElanic)
+                {
+                    for (int i = 0; i < count; ++i)
+                    {
+                        PopulateElanicTexture(i);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < count; ++i)
+                    {
+                        Textures[i] = m_FrameTextures[i];
+                    }
+                }
+            }
+        }
+
+        private void PopulateElanicTexture(int imageIndex)
+        {
+            ElanicFrame f = m_ElanicData.Frames[imageIndex];
+            if (f.HasDiffData)
+            {
+                Texture2D tex = new Texture2D(m_Dimensions.x, m_Dimensions.y, TextureFormat.RGBA32, 1, false);
+                //Graphics.CopyTexture(m_ElanicData.Imprints[f.ImprintIndex], tex);
+                Color32[] pixels = m_ElanicData.Imprints[f.ImprintIndex].GetPixels32();
+                List<Color32> colors = m_ElanicData.Colors;
+                for (int i = 0; i < f.DiffPixelCount; ++i)
+                {
+                    uint p = f.DiffPixelPosition[i];
+                    short colorIndex = f.DiffPixelColorIndex[i];
+                    // negative numbers are compressed data
+                    // positive numbers including 0 are standard data
+                    if (colorIndex == -1)
+                    {
+                        // -1 means fill the same color as prev pixel diff
+                        // all the way up to and including this x position
+                        uint pvp = f.DiffPixelPosition[i - 1];
+                        colorIndex = f.DiffPixelColorIndex[i - 1];
+                        for (uint j = pvp + 1; j <= p; ++j)
+                        {
+                            pixels[j] = colors[colorIndex];
+                        }
+                    }
+                    else
+                    {
+                        // set the current pixel
+                        pixels[p] = colors[colorIndex];
+                    }
+                }
+                tex.SetPixels32(pixels);
+                tex.Apply();
+                Textures[imageIndex] = tex;
+            }
+            else
+            {
+                Textures[imageIndex] = m_ElanicData.Imprints[f.ImprintIndex];
+            }
+        }
+
+        public void UnloadTextures()
+        {
+            // destroy generated textures
+            if (IsUsingElanic)
+            {
+                for (int i = 0; i < Textures.Length; ++i)
+                {
+                    ElanicFrame f = m_ElanicData.Frames[i];
+                    if (f.HasDiffData) Destroy(Textures[i]);
+                }
+                IsUsingElanic = false;
+            }
+            // clear array
+            Textures = null;
         }
     }
 }

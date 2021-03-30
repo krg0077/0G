@@ -52,11 +52,11 @@ namespace _0G.Legacy
 
         private int m_AnimationImageIndex;
 
-        private Texture2D[] m_AnimationTextures;
-
         private float m_AnimationTimeElapsed;
 
         private TimeTrigger m_FlickerTimeTrigger;
+
+        private List<RasterAnimation> m_LoadedRasterAnimations;
 
         private Material m_Material;
 
@@ -144,7 +144,8 @@ namespace _0G.Legacy
 
         public bool IsAnimationPlaying => m_AnimationContext != AnimationContext.None;
 
-        protected virtual bool AnimationUsesElanic => RasterAnimation.UsesElanic &&
+        protected virtual bool AnimationUsesElanic => RasterAnimation.HasElanicData &&
+            G.gfx.LosslessAnimations != GraphicsLosslessAnimations.Never &&
             (m_Body.IsGalleryAnimation || G.gfx.LosslessAnimations == GraphicsLosslessAnimations.Always);
 
         protected virtual GameObject GraphicGameObject => m_Body?.Refs.GraphicGameObject ?? gameObject;
@@ -223,8 +224,6 @@ namespace _0G.Legacy
 
             UnloadRasterAnimationState();
 
-            DestroyGeneratedTextures();
-
             if (G.U.IsPlayMode(this))
             {
                 DestroyImmediate(m_Material);
@@ -298,57 +297,11 @@ namespace _0G.Legacy
 
         // MAIN METHODS
 
-        private void PopulateElanicTexture(int imageIndex)
-        {
-            ElanicFrame f = RasterAnimation.ElanicFrames[imageIndex];
-            if (f.HasDiffData)
-            {
-                Texture2D tex = new Texture2D(RasterAnimation.Dimensions.x, RasterAnimation.Dimensions.y, TextureFormat.RGBA32, 1, false);
-                //Graphics.CopyTexture(RasterAnimation.Imprints[f.ImprintIndex], tex);
-                Color32[] pixels = RasterAnimation.Imprints[f.ImprintIndex].GetPixels32();
-                List<Color32> colors = RasterAnimation.Colors;
-                for (int i = 0; i < f.DiffPixelCount; ++i)
-                {
-                    uint p = f.DiffPixelPosition[i];
-                    short colorIndex = f.DiffPixelColorIndex[i];
-                    // negative numbers are compressed data
-                    // positive numbers including 0 are standard data
-                    if (colorIndex == -1)
-                    {
-                        // -1 means fill the same color as prev pixel diff
-                        // all the way up to and including this x position
-                        uint pvp = f.DiffPixelPosition[i - 1];
-                        colorIndex = f.DiffPixelColorIndex[i - 1];
-                        for (uint j = pvp + 1; j <= p; ++j)
-                        {
-                            pixels[j] = colors[colorIndex];
-                        }
-                    }
-                    else
-                    {
-                        // set the current pixel
-                        pixels[p] = colors[colorIndex];
-                    }
-                }
-                tex.SetPixels32(pixels);
-                tex.Apply();
-                m_AnimationTextures[imageIndex] = tex;
-            }
-            else
-            {
-                m_AnimationTextures[imageIndex] = RasterAnimation.Imprints[f.ImprintIndex];
-            }
-        }
-
         public void RefreshAnimationImage()
         {
             if (m_AnimationImageCount == 0) return;
             m_AnimationImageIndex = Mathf.Min(m_AnimationImageIndex, m_AnimationImageCount - 1);
-            if (AnimationUsesElanic && m_AnimationTextures[m_AnimationImageIndex] == null) // TODO: still needed?
-            {
-                PopulateElanicTexture(m_AnimationImageIndex);
-            }
-            SetTexture(m_AnimationTextures[m_AnimationImageIndex]);
+            SetTexture(RasterAnimation.Textures[m_AnimationImageIndex]);
         }
 
         private void SetTexture(Texture texture)
@@ -385,27 +338,22 @@ namespace _0G.Legacy
                 OnAnimationEnd(false, false);
             }
 
-            DestroyGeneratedTextures();
-
             OnAnimationClear();
 
             RasterAnimation = rasterAnimation;
+            rasterAnimation.LoadTextures(AnimationUsesElanic);
+            if (m_LoadedRasterAnimations != null && !m_LoadedRasterAnimations.Contains(rasterAnimation))
+            {
+                m_LoadedRasterAnimations.Add(rasterAnimation);
+            }
+
             m_AnimationCallback = callback;
             m_AnimationContext = context;
             m_AnimationFrameIndex = 0;
             m_AnimationFrameListIndex = 0;
-            m_AnimationImageCount = AnimationUsesElanic ? rasterAnimation.ElanicFrames.Count : rasterAnimation.FrameTextures.Count;
+            m_AnimationImageCount = rasterAnimation.Textures.Length;
             m_AnimationImageIndex = 0;
-            m_AnimationTextures = AnimationUsesElanic ? new Texture2D[m_AnimationImageCount] : rasterAnimation.FrameTextures.ToArray();
             m_AnimationTimeElapsed = 0;
-
-            if (AnimationUsesElanic)
-            {
-                for (int i = 0; i < m_AnimationImageCount; ++i)
-                {
-                    PopulateElanicTexture(i);
-                }
-            }
 
             if (G.U.IsPlayMode(this))
             {
@@ -442,6 +390,24 @@ namespace _0G.Legacy
             }
         }
 
+        public void TrackAnimationTextures()
+        {
+            m_LoadedRasterAnimations = new List<RasterAnimation>();
+            if (!string.IsNullOrWhiteSpace(IdleAnimationName) && G.obj.RasterAnimations.ContainsKey(IdleAnimationName))
+            {
+                m_LoadedRasterAnimations.Add(G.obj.RasterAnimations[IdleAnimationName]);
+            }
+        }
+
+        public void UnloadAnimationTextures()
+        {
+            foreach (var ra in m_LoadedRasterAnimations)
+            {
+                if (ra != null) ra.UnloadTextures();
+            }
+            m_LoadedRasterAnimations = null;
+        }
+
         public void SetSharedMaterial(Material sharedMaterial)
         {
             m_Renderer.sharedMaterial = sharedMaterial;
@@ -460,18 +426,6 @@ namespace _0G.Legacy
 #else
             G.U.Err("This function requires DG.Tweening (DOTween).");
 #endif
-        }
-
-        private void DestroyGeneratedTextures()
-        {
-            if (RasterAnimation != null && AnimationUsesElanic)
-            {
-                for (int i = 0; i < m_AnimationImageCount; ++i)
-                {
-                    ElanicFrame f = RasterAnimation.ElanicFrames[i];
-                    if (f.HasDiffData) Destroy(m_AnimationTextures[i]);
-                }
-            }
         }
 
         // RENDER METHODS
