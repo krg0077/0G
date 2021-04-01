@@ -27,6 +27,11 @@ namespace _0G.Legacy
 
         // SERIALIZED FIELDS
 
+        [Header("Asset Bundle Info")]
+
+        [Order(-10)]
+        public string BundleName = default;
+
         [Header("Custom Data")]
 
         [Order(-10)]
@@ -43,10 +48,6 @@ namespace _0G.Legacy
         [Order(-10)]
         [SerializeField]
         protected Vector2Int m_Dimensions = default;
-
-        [Order(-10)]
-        [SerializeField]
-        protected ElanicData m_ElanicData = default;
 
         [Order(-10)]
         [SerializeField]
@@ -105,7 +106,7 @@ namespace _0G.Legacy
 
         public virtual Vector2Int Dimensions => m_Dimensions;
 
-        public virtual ElanicData ElanicData => m_ElanicData;
+        public virtual ElanicData ElanicData { get; private set; }
 
         public virtual float FrameRate => m_SecondsPerFrame > 0 ? 1f / m_SecondsPerFrame : DEFAULT_SPRITE_FPS;
 
@@ -117,11 +118,7 @@ namespace _0G.Legacy
 
         public virtual TextAsset gifBytes { get { return _gifBytes; } }
 
-        public virtual bool HasElanicData => m_ElanicData != null;
-
         public virtual bool hasPlayableFrameSequences { get; private set; }
-
-        public virtual bool IsUsingElanic { get; private set; }
 
         public virtual int loopToSequence { get { return _loopToSequence; } }
 
@@ -312,7 +309,7 @@ namespace _0G.Legacy
 
         // ELANIC & TEXTURE METHODS
 
-        public void ConvertToElanic(ElanicData data) // ELANIC: Experimental Lossless Animation Compression
+        public void ConvertToElanic(ElanicData data)
         {
             data.Colors.Add(Color.clear); // color index 0
             Color32[] currColors, prevColors = null;
@@ -392,22 +389,22 @@ namespace _0G.Legacy
                     });
                 }
             }
-            m_ElanicData = data;
         }
 
-        public void LoadTextures(bool usesElanic)
+        public void LoadTextures()
         {
-            if (Textures != null && IsUsingElanic != usesElanic)
+            // I've encountered strange instances in the editor where the array
+            // is non-null with a length of zero, or it has a positive length,
+            // but all of the elements are null... TODO: why? WHY!? am I being trolled?
+            if (Textures == null || Textures.Length == 0 || Textures[0] == null)
             {
-                UnloadTextures();
-            }
-            if (Textures == null || Textures.Length == 0) // TODO: seems length is 0 sometimes; why?
-            {
-                IsUsingElanic = usesElanic;
-                int count = usesElanic ? m_ElanicData.Frames.Count : m_FrameTextures.Count;
-                Textures = new Texture2D[count];
-                if (usesElanic)
+                ElanicData = G.obj.GetElanicData(this);
+
+                if (ElanicData != null)
                 {
+                    // if we have lossless data, populate textures using ELANIC
+                    int count = ElanicData.Frames.Count;
+                    Textures = new Texture2D[count];
                     for (int i = 0; i < count; ++i)
                     {
                         PopulateElanicTexture(i);
@@ -415,6 +412,9 @@ namespace _0G.Legacy
                 }
                 else
                 {
+                    // if we have no access to lossless data, populate textures the standard way
+                    int count = m_FrameTextures.Count;
+                    Textures = new Texture2D[count];
                     for (int i = 0; i < count; ++i)
                     {
                         Textures[i] = m_FrameTextures[i];
@@ -425,13 +425,13 @@ namespace _0G.Legacy
 
         private void PopulateElanicTexture(int imageIndex)
         {
-            ElanicFrame f = m_ElanicData.Frames[imageIndex];
+            ElanicFrame f = ElanicData.Frames[imageIndex];
             if (f.HasDiffData)
             {
                 Texture2D tex = new Texture2D(m_Dimensions.x, m_Dimensions.y, TextureFormat.RGBA32, 1, false);
                 //Graphics.CopyTexture(m_ElanicData.Imprints[f.ImprintIndex], tex);
-                Color32[] pixels = m_ElanicData.Imprints[f.ImprintIndex].GetPixels32();
-                List<Color32> colors = m_ElanicData.Colors;
+                Color32[] pixels = ElanicData.Imprints[f.ImprintIndex].GetPixels32();
+                List<Color32> colors = ElanicData.Colors;
                 for (int i = 0; i < f.DiffPixelCount; ++i)
                 {
                     uint p = f.DiffPixelPosition[i];
@@ -461,24 +461,23 @@ namespace _0G.Legacy
             }
             else
             {
-                Textures[imageIndex] = m_ElanicData.Imprints[f.ImprintIndex];
+                Textures[imageIndex] = ElanicData.Imprints[f.ImprintIndex];
             }
         }
 
         public void UnloadTextures()
         {
-            // destroy generated textures
-            if (IsUsingElanic)
+            if (Textures != null && ElanicData != null)
             {
+                // destroy generated textures
                 for (int i = 0; i < Textures.Length; ++i)
                 {
-                    ElanicFrame f = m_ElanicData.Frames[i];
+                    ElanicFrame f = ElanicData.Frames[i];
                     if (f.HasDiffData) Destroy(Textures[i]);
                 }
-                IsUsingElanic = false;
             }
-            // clear array
             Textures = null;
+            ElanicData = null;
         }
     }
 }

@@ -67,6 +67,7 @@ namespace _0G.Legacy
         public bool IsEnemy => CharacterType == CharacterType.Enemy;
         public bool IsBoss => CharacterType == CharacterType.Boss;
         public bool IsGalleryAnimation => GameObjectType == GameObjectType.GalleryAnimation;
+        public bool IsVFX => GameObjectType == GameObjectType.VFX;
 
         // ATTACK PROPERTIES
 

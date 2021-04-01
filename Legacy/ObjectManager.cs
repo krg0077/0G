@@ -23,11 +23,11 @@ namespace _0G.Legacy
 
         // PUBLIC PROPERTIES
 
-#if KRG_BUNDLE_VARIANT_HD
-        public string AssetBundleVariant => "hd";
-#else
-        public string AssetBundleVariant => "sd";
-#endif
+        public AssetPackAccess AccessForGallery => G.gfx.LosslessAnimations == GraphicsLosslessAnimations.Always
+            || G.gfx.LosslessAnimations == GraphicsLosslessAnimations.GalleryOnly
+            ? AssetPackAccess.LosslessDelayed : AssetPackAccess.Standard;
+        public AssetPackAccess AccessForGameplay => G.gfx.LosslessAnimations == GraphicsLosslessAnimations.Always
+            ? AssetPackAccess.LosslessImmediate : AssetPackAccess.Standard;
 
         public Dictionary<int, int> CharacterCounts { get; } = new Dictionary<int, int>();
 
@@ -75,7 +75,7 @@ namespace _0G.Legacy
         {
             EnvironmentChart ec;
             bool doneUnloadingUnusedAssets = false;
-            bool loadElanicTextures = G.gfx.LosslessAnimations == GraphicsLosslessAnimations.Always;
+            AssetPackAccess access = AccessForGameplay;
 
             // unload all environment assets
             while (EnvironmentCharts.Count > 0)
@@ -101,9 +101,7 @@ namespace _0G.Legacy
                         Resources.UnloadUnusedAssets();
                         doneUnloadingUnusedAssets = true;
                     }
-
-                    LoadAssetPack<CharacterDossier>(cc.Key);
-                    if (loadElanicTextures) LoadElanicTextures<CharacterDossier>(cc.Key);
+                    LoadAssetPack<CharacterDossier>(cc.Key, access);
                 }
             }
 
@@ -112,8 +110,7 @@ namespace _0G.Legacy
             ec = LoadDocket<EnvironmentChart>(environmentID);
             if (ec != null)
             {
-                LoadAssetPack<EnvironmentChart>(environmentID);
-                if (loadElanicTextures) LoadElanicTextures<EnvironmentChart>(environmentID);
+                LoadAssetPack<EnvironmentChart>(environmentID, access);
             }
         }
 
@@ -237,11 +234,6 @@ namespace _0G.Legacy
 
         private AssetBundle LoadAssetBundle(string bundleName)
         {
-            if (!string.IsNullOrWhiteSpace(AssetBundleVariant))
-            {
-                bundleName += "." + AssetBundleVariant;
-            }
-
             AssetBundle assetBundle = GetLoadedAssetBundle(bundleName);
 
             if (assetBundle == null)
@@ -334,13 +326,6 @@ namespace _0G.Legacy
                 CharacterDossier cd = (CharacterDossier)dk;
                 CharacterDossiers.Add(id, cd);
 
-                // we always need the Idle animation
-                string idleAnimName = cd.GraphicData.IdleAnimationName;
-                if (!string.IsNullOrWhiteSpace(idleAnimName))
-                {
-                    AddAnimation(assetBundle, idleAnimName);
-                }
-
                 // CharacterIDAdded is invoked in Register
             }
             else
@@ -373,18 +358,6 @@ namespace _0G.Legacy
                 dk = EnvironmentCharts[id];
             }
 
-            // remove all remaining raster animations for this docket
-            // NOTE: this includes default animations such as Idle
-            string keyPrefix = dk.FileName + "_";
-            List<string> keysToRemove = RasterAnimations
-                .Where(pair => pair.Key.StartsWith(keyPrefix, System.StringComparison.Ordinal))
-                .Select(pair => pair.Key)
-                .ToList();
-            for (int i = 0; i < keysToRemove.Count; ++i)
-            {
-                RemoveAnimation(keysToRemove[i]);
-            }
-
             // remove docket from dictionary; unload its bundle
             if (isCharacter)
             {
@@ -399,106 +372,68 @@ namespace _0G.Legacy
             UnloadAssetBundle(bundleName);
         }
 
-        private void LoadAssetPack<T>(int id) where T : Docket
+        /// <summary>
+        /// LoadAssetPack will be called automatically for each
+        /// character in a gameplay scene when the scene is started.
+        /// Call this manually ONLY in the case where
+        /// you need to spawn a character dynamically.
+        /// </summary>
+        public void LoadAssetPack<T>(int id, AssetPackAccess access) where T : Docket
         {
             if (id == 0) return;
 
             bool isCharacter = typeof(T) == typeof(CharacterDossier);
             Docket dk = isCharacter ? (Docket)CharacterDossiers[id] : (Docket)EnvironmentCharts[id];
 
-            // load the asset pack asset bundle
-            AssetBundle ab = LoadAssetBundle(dk.AssetPackBundleName);
+            // load the standard asset pack asset bundle (yes, it is needed for lossless as well)
+            AssetBundle assetBundleSD = LoadAssetBundle(dk.BundleName + AssetBundlePart.STANDARD_ASSET_PACK);
+            if (assetBundleSD == null) return;
 
-            if (ab == null) return;
+            // load the lossless asset pack asset bundle if desired
+            // we will retrieve the loaded asset bundle later in GetElanicData
+            if (access == AssetPackAccess.LosslessDelayed || access == AssetPackAccess.LosslessImmediate)
+            {
+                _ = LoadAssetBundle(dk.BundleName + AssetBundlePart.LOSSLESS_ASSET_PACK);
+            }
 
             // add all of its animations to the dictionary of loaded animations
             if (isCharacter)
             {
                 foreach (StateAnimation sa in ((CharacterDossier)dk).GraphicData.StateAnimations)
                 {
-                    AddAnimation(ab, sa.animationName);
+                    AddAnimation(assetBundleSD, sa.animationName, access);
                 }
             }
             else
             {
                 foreach (string animationName in ((EnvironmentChart)dk).AnimationNames)
                 {
-                    AddAnimation(ab, animationName);
+                    AddAnimation(assetBundleSD, animationName, access);
                 }
             }
         }
 
-        private void LoadElanicTextures<T>(int id) where T : Docket
+        public void UnloadAssetPack<T>(int id) where T : Docket
         {
             if (id == 0) return;
 
             bool isCharacter = typeof(T) == typeof(CharacterDossier);
             Docket dk = isCharacter ? (Docket)CharacterDossiers[id] : (Docket)EnvironmentCharts[id];
 
-            // load ELANIC textures for all of its animations
-            if (isCharacter)
+            // remove all raster animations for this docket
+            string keyPrefix = dk.FileName + "_";
+            List<string> keysToRemove = RasterAnimations
+                .Where(pair => pair.Key.StartsWith(keyPrefix, System.StringComparison.Ordinal))
+                .Select(pair => pair.Key)
+                .ToList();
+            for (int i = 0; i < keysToRemove.Count; ++i)
             {
-                GraphicData gd = ((CharacterDossier)dk).GraphicData;
-                // load textures for idle animation
-                string idleAnimName = gd.IdleAnimationName;
-                if (!string.IsNullOrWhiteSpace(idleAnimName) && RasterAnimations.ContainsKey(idleAnimName))
-                {
-                    RasterAnimation ra = RasterAnimations[idleAnimName];
-                    if (ra != null) ra.LoadTextures(true);
-                }
-                // load textures for state animations
-                foreach (StateAnimation sa in gd.StateAnimations)
-                {
-                    if (!RasterAnimations.ContainsKey(sa.animationName)) continue;
-                    RasterAnimation ra = RasterAnimations[sa.animationName];
-                    if (ra != null && ra.HasElanicData) ra.LoadTextures(true);
-                }
-            }
-            else
-            {
-                foreach (string animationName in ((EnvironmentChart)dk).AnimationNames)
-                {
-                    if (!RasterAnimations.ContainsKey(animationName)) continue;
-                    RasterAnimation ra = RasterAnimations[animationName];
-                    if (ra != null && ra.HasElanicData) ra.LoadTextures(true);
-                }
-            }
-        }
-
-        private void UnloadAssetPack<T>(int id) where T : Docket
-        {
-            if (id == 0) return;
-
-            bool isCharacter = typeof(T) == typeof(CharacterDossier);
-            Docket dk = isCharacter ? (Docket)CharacterDossiers[id] : (Docket)EnvironmentCharts[id];
-
-            // remove all remaining raster animations for this asset pack
-            if (isCharacter)
-            {
-                GraphicData gd = ((CharacterDossier)dk).GraphicData;
-                // unload textures for idle animation, in case it's using ELANIC, but don't remove it
-                string idleAnimName = gd.IdleAnimationName;
-                if (!string.IsNullOrWhiteSpace(idleAnimName) && RasterAnimations.ContainsKey(idleAnimName))
-                {
-                    RasterAnimation ra = RasterAnimations[idleAnimName];
-                    if (ra != null) ra.UnloadTextures();
-                }
-                // remove state animations, unloading textures in the process
-                foreach (StateAnimation sa in gd.StateAnimations)
-                {
-                    RemoveAnimation(sa.animationName);
-                }
-            }
-            else
-            {
-                foreach (string animationName in ((EnvironmentChart)dk).AnimationNames)
-                {
-                    RemoveAnimation(animationName);
-                }
+                RemoveAnimation(keysToRemove[i]);
             }
 
-            // unload the asset pack asset bundle
-            UnloadAssetBundle(dk.AssetPackBundleName);
+            // unload the asset pack asset bundles
+            UnloadAssetBundle(dk.BundleName + AssetBundlePart.LOSSLESS_ASSET_PACK);
+            UnloadAssetBundle(dk.BundleName + AssetBundlePart.STANDARD_ASSET_PACK);
         }
 
         // CHARACTER & ENVIRONMENT METHODS
@@ -518,44 +453,23 @@ namespace _0G.Legacy
             }
         }
 
-        /// <summary>
-        /// LoadCharacterAssetPack will be called automatically for each
-        /// character in a gameplay scene when the scene is started.
-        /// Call this manually ONLY in the case where
-        /// you need to spawn a character dynamically.
-        /// </summary>
-        public void LoadCharacterAssetPack(int characterID) => LoadAssetPack<CharacterDossier>(characterID);
-        public void LoadCharacterElanicTextures(int characterID) => LoadElanicTextures<CharacterDossier>(characterID);
-        public void UnloadCharacterAssetPack(int characterID) => UnloadAssetPack<CharacterDossier>(characterID);
-        public void LoadEnvironmentAssetPack(int environmentID) => LoadAssetPack<EnvironmentChart>(environmentID);
-        public void LoadEnvironmentElanicTextures(int environmentID) => LoadElanicTextures<EnvironmentChart>(environmentID);
-        public void UnloadEnvironmentAssetPack(int environmentID) => UnloadAssetPack<EnvironmentChart>(environmentID);
-
         // ANIMATION METHODS
 
-        /// <summary>
-        /// Use this only if you need a default EDITOR animation other than Idle.
-        /// The animation must be in the same AssetBundle as the CharacterDossier.
-        /// </summary>
-        public void AddDefaultAnimation(int characterID, string animationName)
+        public void AddAnimation(int characterID, string animationName, AssetPackAccess access)
         {
             string bundleName = CharacterDossier.GetBundleName(characterID);
-
-            AssetBundle assetBundle = LoadAssetBundle(bundleName);
-
-            AddAnimation(assetBundle, animationName);
+            AssetBundle assetBundleSD = LoadAssetBundle(bundleName + AssetBundlePart.STANDARD_ASSET_PACK);
+            AddAnimation(assetBundleSD, animationName, access);
         }
 
-        public void AddExtraAnimation(CharacterDossier characterDossier, string animationName)
+        public void AddAnimation(CharacterDossier characterDossier, string animationName, AssetPackAccess access)
         {
-            string bundleName = characterDossier.AssetPackBundleName;
-
-            AssetBundle assetBundle = LoadAssetBundle(bundleName);
-
-            AddAnimation(assetBundle, animationName);
+            string bundleName = characterDossier.BundleName;
+            AssetBundle assetBundleSD = LoadAssetBundle(bundleName + AssetBundlePart.STANDARD_ASSET_PACK);
+            AddAnimation(assetBundleSD, animationName, access);
         }
 
-        private void AddAnimation(AssetBundle assetBundle, string animationName)
+        private void AddAnimation(AssetBundle assetBundleSD, string animationName, AssetPackAccess access)
         {
             RasterAnimation ra;
 
@@ -568,8 +482,14 @@ namespace _0G.Legacy
             }
 
             // load animation and add to dictionary of loaded animations
-            ra = assetBundle.LoadAsset<RasterAnimation>(animationName);
+            ra = assetBundleSD.LoadAsset<RasterAnimation>(animationName);
             RasterAnimations.Add(animationName, ra);
+
+            // option to generate lossless textures immediately, such as at the beginning of a gameplay scene
+            if (access == AssetPackAccess.LosslessImmediate)
+            {
+                ra.LoadTextures();
+            }
         }
 
         public void RemoveAnimation(string animationName)
@@ -583,6 +503,17 @@ namespace _0G.Legacy
                 if (ra != null) ra.UnloadTextures();
                 RasterAnimations.Remove(animationName);
             }
+        }
+
+        public ElanicData GetElanicData(RasterAnimation ra)
+        {
+            // if the lossless asset bundle was loaded in LoadAssetPack,
+            // get the appropriate ELANIC Data from it
+            string bundleNameLL = ra.BundleName + AssetBundlePart.LOSSLESS_ASSET_PACK;
+            AssetBundle assetBundleLL = GetLoadedAssetBundle(bundleNameLL);
+            if (assetBundleLL == null) return null;
+            string elanicDataName = ra.name.Replace(RasterAnimation.SUFFIX, ElanicData.SUFFIX);
+            return assetBundleLL.LoadAsset<ElanicData>(elanicDataName);
         }
 
         // OLD SHIZ

@@ -142,10 +142,6 @@ namespace _0G.Legacy
 
         public bool IsAnimationPlaying => m_AnimationContext != AnimationContext.None;
 
-        protected virtual bool AnimationUsesElanic => RasterAnimation.HasElanicData &&
-            G.gfx.LosslessAnimations != GraphicsLosslessAnimations.Never &&
-            (m_Body.IsGalleryAnimation || G.gfx.LosslessAnimations == GraphicsLosslessAnimations.Always);
-
         protected virtual GameObject GraphicGameObject => m_Body?.Refs.GraphicGameObject ?? gameObject;
 
         protected virtual bool IsTimePaused => TimeThread.isPaused;
@@ -155,8 +151,6 @@ namespace _0G.Legacy
         private Material BaseSharedMaterial => CharacterDossier?.GraphicData.BaseSharedMaterial;
 
         private CharacterDossier CharacterDossier => m_Body.CharacterDossier;
-
-        private string IdleAnimationName => CharacterDossier?.GraphicData.IdleAnimationName;
 
         private bool IsStandaloneCharacterAnimation => m_Body.gameObject.CompareTag(CharacterTag.Animation.ToString());
 
@@ -168,28 +162,26 @@ namespace _0G.Legacy
             InitMaterial();
             InitRawImage();
             InitMeshSort();
-
             InitStandaloneAnimation();
-
             if (m_Body != null)
             {
-                switch (m_Body.GameObjectType)
-                {
-                    case GameObjectType.Character:
-                        InitCharacter();
-                        break;
-                    case GameObjectType.VFX:
-                        InitVFX();
-                        break;
-                }
+                if (m_Body.IsCharacter) InitCharacter();
+                if (m_Body.IsVFX) InitVFX();
             }
-
             AddPauseAndUnpauseHandlers();
         }
 
         protected virtual void Update()
         {
-            if (G.U.IsEditMode(this) || RasterAnimation == null || IsTimePaused) return;
+            if (G.U.IsEditMode(this) || IsTimePaused) return;
+
+            if (RasterAnimation == null && m_Body != null && m_Body.IsCharacter &&
+                G.obj.RasterAnimations.ContainsKey(CharacterDossier.IdleAnimationName))
+            {
+                SetAnimation(AnimationContext.Idle, CharacterDossier.IdleAnimationName);
+            }
+
+            if (RasterAnimation == null) return;
 
             m_AnimationTimeElapsed += m_SpeedMultiplier * TimeThread.deltaTime;
 
@@ -267,22 +259,8 @@ namespace _0G.Legacy
 
         private void InitCharacter()
         {
-            // for interim backwards compatibility, allow old functionality if no editor sprite is provided
-            if (G.U.IsPlayMode(this) || EditorSprite == null)
-            {
-                if (m_AnimationContext == AnimationContext.None && !string.IsNullOrWhiteSpace(IdleAnimationName))
-                {
-                    SetAnimation(AnimationContext.Idle, IdleAnimationName);
-                }
-                if (G.U.IsPlayMode(this))
-                {
-                    AddCharacterStateHandlers();
-                }
-            }
-            else
-            {
-                SetTexture(EditorSprite);
-            }
+            if (RasterAnimation == null) SetTexture(EditorSprite);
+            if (G.U.IsPlayMode(this)) AddCharacterStateHandlers();
         }
 
         private void InitVFX()
@@ -339,7 +317,7 @@ namespace _0G.Legacy
             OnAnimationClear();
 
             RasterAnimation = rasterAnimation;
-            rasterAnimation.LoadTextures(AnimationUsesElanic);
+            rasterAnimation.LoadTextures();
 
             m_AnimationCallback = callback;
             m_AnimationContext = context;
@@ -594,8 +572,6 @@ namespace _0G.Legacy
 
         private void AddCharacterStateHandlers()
         {
-            if (G.U.IsEditMode(this)) return;
-
             if (m_Body == null || CharacterDossier == null || IsStandaloneCharacterAnimation) return;
 
             List<StateAnimation> stateAnimations = CharacterDossier.GraphicData.StateAnimations;
@@ -634,13 +610,14 @@ namespace _0G.Legacy
             List<StateAnimation> stateAnimations = CharacterDossier.GraphicData.StateAnimations;
 
             AnimationContext context = AnimationContext.Idle;
-            string animationName = IdleAnimationName;
+            string animationName = CharacterDossier.IdleAnimationName;
 
             for (int i = 0; i < stateAnimations.Count; ++i)
             {
                 StateAnimation sa = stateAnimations[i];
 
-                if (m_Body.Refs.StateOwner.HasState(sa.state) || (value && state == sa.state))
+                // state 0 is also idle
+                if (sa.state == 0 || m_Body.Refs.StateOwner.HasState(sa.state) || (value && state == sa.state))
                 {
                     context = AnimationContext.CharacterState;
                     animationName = sa.animationName;

@@ -16,12 +16,8 @@ namespace _0G.Legacy
         // PROPERTIES
 
         public abstract int ID { get; }
-        //public abstract char Initial { get; }
         public abstract string BundleName { get; }
         public abstract string DocketSuffix { get; }
-        public abstract string DefaultAnimationSuffix { get; }
-
-        public virtual string AssetPackBundleName => FileName.ToLower();
 
         // METHODS
 

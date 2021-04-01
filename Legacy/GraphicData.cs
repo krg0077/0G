@@ -21,8 +21,6 @@ namespace _0G.Legacy
 
         public Texture2D EditorSprite;
 
-        public string IdleAnimationName;
-
         public List<StateAnimation> StateAnimations;
     }
 }

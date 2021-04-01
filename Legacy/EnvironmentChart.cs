@@ -13,7 +13,6 @@ namespace _0G.Legacy
         // CONSTANTS
 
         public const string ENVIRONMENT_CHART_SUFFIX = "_EnvironmentChart";
-        public const string DEFAULT_ANIMATION_SUFFIX = "_Default_RasterAnimation";
 
         // SERIALIZED FIELDS
 
@@ -40,7 +39,6 @@ namespace _0G.Legacy
         public override int ID => EnvironmentID;
         public override string BundleName => GetBundleName(EnvironmentID);
         public override string DocketSuffix => ENVIRONMENT_CHART_SUFFIX;
-        public override string DefaultAnimationSuffix => DEFAULT_ANIMATION_SUFFIX;
 
         // METHODS
 

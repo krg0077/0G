@@ -10,6 +10,12 @@ namespace _0G
     [PreferBinarySerialization]
     public class ElanicData : ScriptableObject
     {
+        // CONSTANTS
+
+        public const string SUFFIX = "_ElanicData";
+
+        // SERIALIZED FIELDS
+
 #if ODIN_INSPECTOR
         [ReadOnly]
 #endif

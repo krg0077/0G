@@ -12,7 +12,6 @@ namespace _0G.Legacy
         // CONSTANTS
 
         public const string CHARACTER_DOSSIER_SUFFIX = "_CharacterDossier";
-        public const string IDLE_ANIMATION_SUFFIX = "_Idle_RasterAnimation";
 
         // SERIALIZED FIELDS
 
@@ -38,7 +37,8 @@ namespace _0G.Legacy
         public override int ID => CharacterID;
         public override string BundleName => GetBundleName(CharacterID);
         public override string DocketSuffix => CHARACTER_DOSSIER_SUFFIX;
-        public override string DefaultAnimationSuffix => IDLE_ANIMATION_SUFFIX;
+
+        public string IdleAnimationName => FileName + "_Idle_RasterAnimation";
 
         public override void OnValidate()
         {
@@ -47,11 +47,6 @@ namespace _0G.Legacy
             if (string.IsNullOrWhiteSpace(FullName))
             {
                 FullName = ProperName;
-            }
-
-            if (string.IsNullOrWhiteSpace(GraphicData.IdleAnimationName))
-            {
-                GraphicData.IdleAnimationName = FileName + IDLE_ANIMATION_SUFFIX;
             }
 
             if (GraphicData.StateAnimations != null)
