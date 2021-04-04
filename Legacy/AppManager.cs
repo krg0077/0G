@@ -47,6 +47,7 @@ namespace _0G.Legacy
         protected const float _activationProgress = 0.9f;
 
         public event System.Action GameplaySceneStarted;
+        public event System.Action GameplayEnded;
 
         /// <summary>
         /// The name of the scene that is intended to be active.
@@ -303,10 +304,9 @@ namespace _0G.Legacy
             }
         }
 
-        protected virtual void InvokeGameplaySceneStarted()
-        {
-            GameplaySceneStarted?.Invoke();
-        }
+        // allow derived classes to invoke events
+        protected virtual void InvokeGameplayEnded() => GameplayEnded?.Invoke();
+        protected virtual void InvokeGameplaySceneStarted() => GameplaySceneStarted?.Invoke();
 
         protected virtual void SendLevelStartAnalytics(string sceneName)
         {

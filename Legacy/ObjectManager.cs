@@ -55,6 +55,7 @@ namespace _0G.Legacy
             }
 
             G.app.GameplaySceneStarted += OnGameplaySceneStarted;
+            G.app.GameplayEnded += OnGameplayEnded;
 
             // instantiate KRGLoader child GameObjects from prefabs
             GameObject[] ps = config.autoInstancedPrefabs;
@@ -66,6 +67,7 @@ namespace _0G.Legacy
 
         public void OnDestroy()
         {
+            G.app.GameplayEnded -= OnGameplayEnded;
             G.app.GameplaySceneStarted -= OnGameplaySceneStarted;
         }
 
@@ -112,6 +114,17 @@ namespace _0G.Legacy
             {
                 LoadAssetPack<EnvironmentChart>(environmentID, access);
             }
+        }
+
+        private void OnGameplayEnded()
+        {
+            // unload all character asset packs, just in case
+            foreach (int id in CharacterDossiers.Keys)
+            {
+                UnloadAssetPack<CharacterDossier>(id);
+            }
+
+            Resources.UnloadUnusedAssets();
         }
 
         // MAIN PUBLIC METHODS
