@@ -1,25 +1,41 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace _0G
 {
-    public class Input : MonoBehaviour
+    public static class Input
     {
         // TODO: should this be static or instanced?
         // input should reference a player object
         // as well as InputKey
 
-        // Start is called before the first frame update
-        void Start()
+        public static bool KeyDown(InputKey key)
         {
-
+            switch (key)
+            {
+                case InputKey.UISubmit:
+                    return UnityEngine.Input.GetKeyDown(KeyCode.Return);
+            }
+            return false;
         }
 
-        // Update is called once per frame
-        void Update()
+        public static bool KeyHeld(InputKey key)
         {
+            switch (key)
+            {
+                case InputKey.UISubmit:
+                    return UnityEngine.Input.GetKey(KeyCode.Return);
+            }
+            return false;
+        }
 
+        public static bool KeyUp(InputKey key)
+        {
+            switch (key)
+            {
+                case InputKey.UISubmit:
+                    return UnityEngine.Input.GetKeyUp(KeyCode.Return);
+            }
+            return false;
         }
     }
 }

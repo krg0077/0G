@@ -21,6 +21,11 @@ namespace _0G
             Debug.Log("0G");
         }
 
+        private void Update()
+        {
+            if (Input.KeyDown(InputKey.UISubmit)) Debug.Log("Submit");
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
