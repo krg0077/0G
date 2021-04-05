@@ -11,7 +11,11 @@ namespace _0G
 
         public static void Setup(GameObject anchor)
         {
+#if CHRONOS_TIME_CONTROL
+            anchor.NewChildGameObjectTyped<Chronos.Timekeeper>("Timekeeper").AddClock("Root");
+#else
             anchor.AddComponent<Clock>();
+#endif
         }
 
         public static Clock GetInstance(int index)

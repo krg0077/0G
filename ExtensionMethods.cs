@@ -7,24 +7,25 @@ namespace _0G
     {
         // GAME OBJECT
 
-        public static GameObject NewChildGameObject<T>(this GameObject parentGameObject) where T : Component
+        public static GameObject NewChildGameObject<T>(this GameObject parentGameObject, string name = null) where T : Component
         {
             GameObject go;
             System.Type type = typeof(T);
+            name = name ?? type.ToString();
             if (type == typeof(Transform))
             {
-                go = new GameObject(type.ToString());
+                go = new GameObject(name);
             }
             else
             {
-                go = new GameObject(type.ToString(), type);
+                go = new GameObject(name, type);
             }
             go.transform.parent = parentGameObject.transform;
             return go;
         }
 
-        public static T NewChildGameObjectTyped<T>(this GameObject parentGameObject) where T : Component
-            => parentGameObject.NewChildGameObject<T>().GetComponent<T>();
+        public static T NewChildGameObjectTyped<T>(this GameObject parentGameObject, string name = null) where T : Component
+            => parentGameObject.NewChildGameObject<T>(name).GetComponent<T>();
 
         // LIST <T>
 
