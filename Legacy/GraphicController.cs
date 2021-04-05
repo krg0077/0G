@@ -302,7 +302,7 @@ namespace _0G.Legacy
             }
             else
             {
-                G.U.Err("Unable to find animation {0}.", animationName);
+                Debug.LogErrorFormat("Unable to find animation {0}.", animationName);
             }
         }
 
@@ -617,7 +617,7 @@ namespace _0G.Legacy
                 StateAnimation sa = stateAnimations[i];
 
                 // state 0 is also idle
-                if (sa.state == 0 || m_Body.Refs.StateOwner.HasState(sa.state) || (value && state == sa.state))
+                if (sa.state != 0 && m_Body.Refs.StateOwner.HasState(sa.state) || (value && state == sa.state))
                 {
                     context = AnimationContext.CharacterState;
                     animationName = sa.animationName;
