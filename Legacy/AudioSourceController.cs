@@ -56,6 +56,7 @@ namespace _0G.Legacy
             m_WriterAudio = GetComponent<WriterAudio>();
             if (m_WriterAudio != null)
             {
+                m_WriterAudio.ClipPlayed += PlayClip;
                 m_WriterAudio.SourceVolumeChanged += SetSourceVolume;
             }
 #endif
@@ -75,6 +76,7 @@ namespace _0G.Legacy
             if (m_WriterAudio != null)
             {
                 m_WriterAudio.SourceVolumeChanged -= SetSourceVolume;
+                m_WriterAudio.ClipPlayed -= PlayClip;
             }
 #endif
         }
@@ -96,6 +98,18 @@ namespace _0G.Legacy
         }
 
 #if KRG_X_FUNGUS
+        private void PlayClip(AudioClip clip)
+        {
+            if (IsMusic)
+            {
+                G.audio.PlayMusic("event:/Music/Fungus/" + clip.name);
+            }
+            if (IsSFX)
+            {
+                G.audio.PlaySFX("event:/SFX/Fungus/" + clip.name, transform);
+            }
+        }
+
         private void SetSourceVolume(float value) => SourceVolume = value;
 #endif
     }
