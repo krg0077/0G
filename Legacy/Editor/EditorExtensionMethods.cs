@@ -5,6 +5,8 @@ namespace _0G.Legacy
 {
     public static class EditorExtensionMethods
     {
+        // EDITOR
+
         public static void DrawProperty(
             this Editor editor,
             string name,

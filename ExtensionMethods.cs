@@ -36,7 +36,7 @@ namespace _0G
             list.Insert(index + indexDelta, item);
         }
 
-        // RECTTRANSFORM
+        // RECT TRANSFORM
 
         public static void SetAnchoredPosition(this RectTransform rectTransform, float? x = null, float? y = null, float? z = null)
         {
