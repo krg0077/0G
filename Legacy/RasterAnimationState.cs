@@ -97,6 +97,9 @@ namespace _0G.Legacy
 
         public virtual RasterAnimation rasterAnimation => _rasterAnimation;
 
+        // the full duration of the current frame sequence, which includes loops (play count)
+        public float FrameSequenceDurationFull { get; private set; }
+
         public List<int> FrameSequencePreActions { get; private set; }
 
         public List<FrameSequence.AudioTrigger> FrameSequenceAudioTriggers { get; private set; }
@@ -112,8 +115,8 @@ namespace _0G.Legacy
             FrameSequenceStopped = options.FrameSequenceStopHandler;
             FrameSequencePlayLoopStarted = options.FrameSequencePlayLoopStartHandler;
             FrameSequencePlayLoopStopped = options.FrameSequencePlayLoopStopHandler;
-            Reset();
             rasterAnimation.MarkAsPlayed();
+            // IMPORTANT: must call Reset() after storing the constructed state
         }
 
         // PUBLIC METHODS
@@ -399,6 +402,7 @@ namespace _0G.Legacy
             _frameSequenceFrameList = _rasterAnimation.GetFrameSequenceFrameList(frameSequenceIndex);
             _frameSequencePlayCount = playCount;
             _frameSequencePlayIndex = advance ? 0 : playCount - 1;
+            FrameSequenceDurationFull = playCount * _frameSequenceFrameList.Count * _rasterAnimation.SecondsPerFrame;
             FrameSequencePreActions = _rasterAnimation.GetFrameSequencePreActions(frameSequenceIndex);
             FrameSequenceAudioTriggers = _rasterAnimation.GetFrameSequenceAudioTriggers(frameSequenceIndex);
             InvokeFrameSequenceStartHandlers();

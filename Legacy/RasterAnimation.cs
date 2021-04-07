@@ -122,6 +122,8 @@ namespace _0G.Legacy
 
         public virtual int loopToSequence { get { return _loopToSequence; } }
 
+        public virtual float SecondsPerFrame => m_SecondsPerFrame;
+
         public virtual Texture2D[] Textures { get; private set; }
 
         // MONOBEHAVIOUR METHODS

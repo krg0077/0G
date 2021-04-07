@@ -140,6 +140,8 @@ namespace _0G.Legacy
             }
         }
 
+        public float FrameSequenceDuration => m_RasterAnimationState.FrameSequenceDurationFull / m_SpeedMultiplier;
+
         public bool IsAnimationPlaying => m_AnimationContext != AnimationContext.None;
 
         protected virtual GameObject GraphicGameObject => m_Body?.Refs.GraphicGameObject ?? gameObject;
@@ -554,7 +556,10 @@ namespace _0G.Legacy
         private void LoadNewRasterAnimationState(RasterAnimation rasterAnimation, RasterAnimationOptions options)
         {
             UnloadRasterAnimationState();
+            // assign the state reference first
+            // then call reset, which will invoke events that may need the state reference
             m_RasterAnimationState = new RasterAnimationState(rasterAnimation, options);
+            m_RasterAnimationState.Reset();
             m_RasterAnimationState.FrameSequenceAudioTriggered += OnFrameSequenceAudioTriggered;
             m_RasterAnimationState.SetLoopMode(m_RasterAnimationLoopMode);
         }
