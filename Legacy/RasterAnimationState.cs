@@ -89,6 +89,8 @@ namespace _0G.Legacy
 
         // PROPERTIES
 
+        public bool CurrentSequenceLoops => _frameSequencePlayCount > 1;
+
         public virtual int frameSequenceIndex => _frameSequenceIndex;
 
         public virtual string frameSequenceName => _frameSequenceName;
