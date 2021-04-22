@@ -148,7 +148,16 @@ namespace _0G.Legacy
 
         public string Name { get => _name; set => _name = value; }
 
-        public string DataSummary => string.Format("{0} [{1}x]", _frames, _playCount.DataSummary);
+        public string DataSummary
+        {
+            get
+            {
+                string s = string.Format("{0} [{1}x]", _frames, _playCount.DataSummary);
+                if (_preSequenceActions?.Count > 0) s += " ACT:" + _preSequenceActions.Count;
+                if (_audioTriggers?.Count > 0) s += " SFX:" + _audioTriggers.Count;
+                return s;
+            }
+        }
 
         public ReadOnlyCollection<int> FrameList => _frameList.AsReadOnly();
 

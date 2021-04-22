@@ -57,5 +57,12 @@ namespace _0G
             if (z.HasValue) p.z = z.Value;
             transform.position = p;
         }
+        
+        // UNITY ENGINE OBJECT
+
+        /// <summary>
+        /// Is the object reference not equal to null?
+        /// </summary>
+        public static bool IsSet(this Object obj) => !ReferenceEquals(obj, null);
     }
 }

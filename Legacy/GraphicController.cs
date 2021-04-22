@@ -44,15 +44,13 @@ namespace _0G.Legacy
 
         private AnimationContext m_AnimationContext;
 
-        private int m_AnimationFrameIndex;
-
         private int m_AnimationFrameListIndex;
+
+        private float m_AnimationFrameTimeElapsed;
 
         private int m_AnimationImageCount;
 
         private int m_AnimationImageIndex;
-
-        private float m_AnimationTimeElapsed;
 
         private TimeTrigger m_FlickerTimeTrigger;
 
@@ -177,28 +175,29 @@ namespace _0G.Legacy
         {
             if (G.U.IsEditMode(this) || IsTimePaused) return;
 
-            if (RasterAnimation == null && m_Body != null && m_Body.IsCharacter &&
+            if (!RasterAnimation.IsSet() && m_Body.IsSet() && m_Body.IsCharacter &&
                 G.obj.RasterAnimations.ContainsKey(CharacterDossier.IdleAnimationName))
             {
                 SetAnimation(AnimationContext.Idle, CharacterDossier.IdleAnimationName);
             }
 
-            if (RasterAnimation == null) return;
+            if (!RasterAnimation.IsSet()) return;
 
-            m_AnimationTimeElapsed += m_SpeedMultiplier * TimeThread.deltaTime;
-
-            int newFrameIndex = Mathf.FloorToInt(RasterAnimation.FrameRate * m_AnimationTimeElapsed);
-
-            while (m_AnimationFrameIndex < newFrameIndex)
+            m_AnimationFrameTimeElapsed += TimeThread.deltaTime;
+            while (m_AnimationImageCount > 0)
             {
-                ++m_AnimationFrameIndex;
-
-                if (m_AnimationImageCount > 0)
+                float frameTime = RasterAnimation.SecondsPerFrame / m_SpeedMultiplier;
+                if (m_AnimationFrameTimeElapsed >= frameTime)
                 {
+                    m_AnimationFrameTimeElapsed -= frameTime;
                     AdvanceImageIndex();
                 }
+                else
+                {
+                    break;
+                }
             }
-
+            
             RefreshAnimationImage();
         }
 
@@ -277,7 +276,7 @@ namespace _0G.Legacy
 
         public void RefreshAnimationImage()
         {
-            if (m_AnimationImageCount == 0) return;
+            if (!RasterAnimation.IsSet()) return;
             m_AnimationImageIndex = Mathf.Min(m_AnimationImageIndex, m_AnimationImageCount - 1);
             SetTexture(RasterAnimation.Textures[m_AnimationImageIndex]);
         }
@@ -323,11 +322,10 @@ namespace _0G.Legacy
 
             m_AnimationCallback = callback;
             m_AnimationContext = context;
-            m_AnimationFrameIndex = 0;
             m_AnimationFrameListIndex = 0;
+            m_AnimationFrameTimeElapsed = 0;
             m_AnimationImageCount = rasterAnimation.Textures.Length;
             m_AnimationImageIndex = 0;
-            m_AnimationTimeElapsed = 0;
 
             if (G.U.IsPlayMode(this))
             {
@@ -527,9 +525,11 @@ namespace _0G.Legacy
 
         private void OnFrameSequenceAudioTriggered(FrameSequence.AudioTrigger audioTrigger)
         {
-            Vector3 position = m_Body != null ? m_Body.CenterTransform.position : transform.position;
+            Vector3 position = m_Body.IsSet() ? m_Body.CenterTransform.position : transform.position;
             G.audio.PlaySFX(audioTrigger.AudioEvent, position);
         }
+
+        protected virtual void OnFrameChanged(RasterAnimationState state, int frameListIndex) { }
 
         protected virtual void OnAnimationClear() { }
 
@@ -561,6 +561,7 @@ namespace _0G.Legacy
             m_RasterAnimationState = new RasterAnimationState(rasterAnimation, options);
             m_RasterAnimationState.Reset();
             m_RasterAnimationState.FrameSequenceAudioTriggered += OnFrameSequenceAudioTriggered;
+            m_RasterAnimationState.FrameChanged += OnFrameChanged;
             m_RasterAnimationState.SetLoopMode(m_RasterAnimationLoopMode);
         }
 
@@ -568,6 +569,7 @@ namespace _0G.Legacy
         {
             if (m_RasterAnimationState != null)
             {
+                m_RasterAnimationState.FrameChanged -= OnFrameChanged;
                 m_RasterAnimationState.FrameSequenceAudioTriggered -= OnFrameSequenceAudioTriggered;
                 m_RasterAnimationState = null;
             }

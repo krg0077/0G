@@ -22,6 +22,7 @@ namespace _0G.Legacy
     {
         // CONSTANTS
 
+        [System.Obsolete]
         public const float DEFAULT_SPRITE_FPS = 20;
         public const string SUFFIX = "_RasterAnimation";
 
@@ -108,6 +109,7 @@ namespace _0G.Legacy
 
         public virtual ElanicData ElanicData { get; private set; }
 
+        [System.Obsolete]
         public virtual float FrameRate => m_SecondsPerFrame > 0 ? 1f / m_SecondsPerFrame : DEFAULT_SPRITE_FPS;
 
         public virtual int frameSequenceCount { get { return _frameSequences.Length; } }

@@ -16,6 +16,8 @@ namespace _0G.Legacy
 
         public delegate void AudioHandler(FrameSequence.AudioTrigger audioTrigger);
 
+        public delegate void FrameHandler(RasterAnimationState ras, int frameListIndex);
+
         // EVENTS
 
         /// <summary>
@@ -42,6 +44,11 @@ namespace _0G.Legacy
         /// Occurs when a frame sequence audio trigger is ready to play.
         /// </summary>
         public event AudioHandler FrameSequenceAudioTriggered;
+        
+        /// <summary>
+        /// Occurs when a frame changes, after all other events.
+        /// </summary>
+        public event FrameHandler FrameChanged;
 
         // FIELDS
 
@@ -338,6 +345,8 @@ namespace _0G.Legacy
             return false;
         }
 
+        public bool IsLastFrameOfSequence(int frameListIndex) => frameListIndex == _frameSequenceFrameList.Count - 1;
+
         public void Reset()
         {
             SetFrameSequence(0, ADVANCE);
@@ -472,15 +481,16 @@ namespace _0G.Legacy
 
         private void OnFrameChanged(int frameListIndex)
         {
-            //play audio as needed
-            for (int i = 0; i < FrameSequenceAudioTriggers.Count; ++i)
+            // play audio as needed
+            foreach (FrameSequence.AudioTrigger audioTrigger in FrameSequenceAudioTriggers)
             {
-                FrameSequence.AudioTrigger audioTrigger = FrameSequenceAudioTriggers[i];
                 if (CheckPlayAudio(audioTrigger) && audioTrigger.FrameDelay == frameListIndex)
                 {
                     FrameSequenceAudioTriggered?.Invoke(audioTrigger);
                 }
             }
+            // invoke frame changed event
+            FrameChanged?.Invoke(this, frameListIndex);
         }
     }
 }
