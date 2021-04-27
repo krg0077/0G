@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace _0G.Legacy
 {
@@ -6,8 +6,11 @@ namespace _0G.Legacy
     {
         public System.Action Destroyed;
 
+        [SerializeField, Enum(typeof(EnvironmentID))]
+        protected int m_EnvironmentID = default;
+
         [SerializeField, System.Obsolete("Just delete the object.")]
-        GameObject[] _redundantObjects = default;
+        private GameObject[] _redundantObjects = default;
         //TODO: convert to separate script (e.g. RedundantSceneObject) subscribing to this awake event, then remove
 
         /// <summary>
@@ -16,6 +19,9 @@ namespace _0G.Legacy
         public abstract string sceneName { get; }
 
         public virtual SceneType SceneType => SceneType.None;
+
+        public EnvironmentID EnvironmentName => (EnvironmentID)m_EnvironmentID;
+        public int EnvironmentNumber => m_EnvironmentID;
 
         /// <summary>
         /// Awake this instance.
