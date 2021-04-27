@@ -276,7 +276,7 @@ namespace _0G.Legacy
 
         public void RefreshAnimationImage()
         {
-            if (!RasterAnimation.IsSet()) return;
+            if (!RasterAnimation.IsSet() || RasterAnimation.Textures == null) return;
             m_AnimationImageIndex = Mathf.Min(m_AnimationImageIndex, m_AnimationImageCount - 1);
             SetTexture(RasterAnimation.Textures[m_AnimationImageIndex]);
         }
@@ -632,7 +632,8 @@ namespace _0G.Legacy
                 }
             }
 
-            if (animationName != RasterAnimation?.name)
+            // ReSharper disable once Unity.PerformanceCriticalCodeNullComparison
+            if (RasterAnimation != null && animationName != RasterAnimation.name)
             {
                 SetAnimation(context, animationName);
             }
