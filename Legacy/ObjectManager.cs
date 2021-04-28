@@ -264,6 +264,7 @@ namespace _0G.Legacy
                 if (assetBundle == null)
                 {
                     G.U.Err("Failed to load AssetBundle {0} at path {1}.", bundleName, path);
+                    return null;
                 }
             }
 
@@ -311,11 +312,7 @@ namespace _0G.Legacy
 
             // load asset bundle
             AssetBundle assetBundle = LoadAssetBundle(bundleName);
-            if (assetBundle == null)
-            {
-                G.U.Err("Failed to load AssetBundle for {0}ID {1}.", isCharacter ? "Character" : "Environment", id);
-                return null;
-            }
+            if (!assetBundle.IsSet()) return null;
 
             // load docket(s)
             T[] dockets = assetBundle.LoadAllAssets<T>();
