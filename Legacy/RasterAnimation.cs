@@ -120,6 +120,8 @@ namespace _0G.Legacy
 
         public virtual TextAsset gifBytes { get { return _gifBytes; } }
 
+        public virtual bool HasFrameSequences => _frameSequences != null && _frameSequences.Length > 0;
+
         public virtual bool hasPlayableFrameSequences { get; private set; }
 
         public virtual int loopToSequence { get { return _loopToSequence; } }

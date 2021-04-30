@@ -32,8 +32,14 @@ namespace _0G
             }
         }
 
-        public static void ConvertToElanic(RasterAnimation rasterAnimation)
+        public static bool ConvertToElanic(RasterAnimation rasterAnimation)
         {
+            if (!rasterAnimation.HasFrameSequences)
+            {
+                Debug.LogWarningFormat("No frame sequences for {0}. Cannot convert to ELANIC.", rasterAnimation.name);
+                return false;
+            }
+
             string assetPath = AssetDatabase.GetAssetPath(rasterAnimation);
             string dirPath = Path.GetDirectoryName(assetPath);
             TextureImporterSettings originalSettings = null;
@@ -108,6 +114,8 @@ namespace _0G
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.LogFormat("Reverted all PNG files in {0}.", rasterAnimation.name);
+
+            return true;
         }
     }
 }
