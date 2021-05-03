@@ -633,7 +633,7 @@ namespace _0G.Legacy
             }
 
             // ReSharper disable once Unity.PerformanceCriticalCodeNullComparison
-            if (RasterAnimation != null && animationName != RasterAnimation.name)
+            if (RasterAnimation == null || animationName != RasterAnimation.name)
             {
                 SetAnimation(context, animationName);
             }
