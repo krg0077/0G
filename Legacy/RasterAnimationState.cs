@@ -98,11 +98,13 @@ namespace _0G.Legacy
 
         public bool CurrentSequenceLoops => _frameSequencePlayCount > 1;
 
+        public virtual int frameSequenceFromFrame => _frameSequenceFrameList[0];
+
         public virtual int frameSequenceIndex => _frameSequenceIndex;
 
         public virtual string frameSequenceName => _frameSequenceName;
-
-        public virtual int frameSequenceFromFrame => _frameSequenceFrameList[0];
+        
+        public virtual int frameSequencePlayIndex => _frameSequencePlayIndex;
 
         public virtual RasterAnimation rasterAnimation => _rasterAnimation;
 

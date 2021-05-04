@@ -74,6 +74,8 @@ namespace _0G.Legacy
 
         private float m_TrailRendererOrigTime;
 
+        private bool m_WaitForAdvanceFrameSequence;
+
         // COMPOUND PROPERTIES
 
         private Color m_ImageColor = Color.white;
@@ -326,6 +328,7 @@ namespace _0G.Legacy
             m_AnimationFrameTimeElapsed = 0;
             m_AnimationImageCount = rasterAnimation.Textures.Length;
             m_AnimationImageIndex = 0;
+            m_WaitForAdvanceFrameSequence = false;
 
             if (G.U.IsPlayMode(this))
             {
@@ -460,9 +463,13 @@ namespace _0G.Legacy
             }
         }
 
-        public void AdvanceFrameSequence()
+        public void AdvanceFrameSequence(bool isImmediate = true)
         {
-            if (m_RasterAnimationState.AdvanceFrameSequence(
+            if (!isImmediate)
+            {
+                m_WaitForAdvanceFrameSequence = true;
+            }
+            else if (m_RasterAnimationState.AdvanceFrameSequence(
                 ref m_AnimationFrameListIndex, out int frameNumber))
             {
                 // GraphicController uses zero-based image index (m_AnimationImageIndex)
@@ -515,6 +522,16 @@ namespace _0G.Legacy
 
         private void OnFrameSequencePlayLoopStart(RasterAnimationState state)
         {
+            if (m_WaitForAdvanceFrameSequence)
+            {
+                m_WaitForAdvanceFrameSequence = false;
+                // advance only if not at the start of a new sequence
+                if (state.frameSequencePlayIndex > 0)
+                {
+                    AdvanceFrameSequence(true);
+                    return;
+                }
+            }
             FrameSequencePlayLoopStarted?.Invoke(state);
         }
 
