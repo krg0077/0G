@@ -122,10 +122,6 @@ namespace _0G.Legacy
             _rasterAnimation = rasterAnimation;
             G.U.Require(_rasterAnimation, "Raster Animation", "this Raster Animation State");
             m_Options = options;
-            FrameSequenceStarted = options.FrameSequenceStartHandler;
-            FrameSequenceStopped = options.FrameSequenceStopHandler;
-            FrameSequencePlayLoopStarted = options.FrameSequencePlayLoopStartHandler;
-            FrameSequencePlayLoopStopped = options.FrameSequencePlayLoopStopHandler;
             rasterAnimation.MarkAsPlayed();
             // IMPORTANT: must call Reset() after storing the constructed state
         }

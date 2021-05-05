@@ -18,10 +18,6 @@ namespace _0G.Legacy
         // EVENTS
 
         public event AnimationEndHandler AnimationEnded;
-        public event RasterAnimationState.StateHandler FrameSequenceStarted;
-        public event RasterAnimationState.StateHandler FrameSequenceStopped;
-        public event RasterAnimationState.StateHandler FrameSequencePlayLoopStarted;
-        public event RasterAnimationState.StateHandler FrameSequencePlayLoopStopped;
 
         // SERIALIZED FIELDS
 
@@ -143,6 +139,8 @@ namespace _0G.Legacy
         public float FrameSequenceDuration => m_RasterAnimationState.FrameSequenceDurationFull / m_SpeedMultiplier;
 
         public bool IsAnimationPlaying => m_AnimationContext != AnimationContext.None;
+
+        public RasterAnimationState RasterAnimationState => m_RasterAnimationState;
 
         protected virtual GameObject GraphicGameObject => m_Body?.Refs.GraphicGameObject ?? gameObject;
 
@@ -334,10 +332,6 @@ namespace _0G.Legacy
             {
                 RasterAnimationOptions options = new RasterAnimationOptions
                 {
-                    FrameSequenceStartHandler = OnFrameSequenceStart,
-                    FrameSequenceStopHandler = OnFrameSequenceStop,
-                    FrameSequencePlayLoopStartHandler = OnFrameSequencePlayLoopStart,
-                    FrameSequencePlayLoopStopHandler = OnFrameSequencePlayLoopStop,
                     InfiniteLoopReplacement = m_Body != null && m_Body.IsGalleryAnimation ? 3 : 0,
                 };
                 LoadNewRasterAnimationState(rasterAnimation, options);
@@ -510,16 +504,6 @@ namespace _0G.Legacy
             m_RasterAnimationState?.SetLoopMode(loopMode);
         }
 
-        private void OnFrameSequenceStart(RasterAnimationState state)
-        {
-            FrameSequenceStarted?.Invoke(state);
-        }
-
-        private void OnFrameSequenceStop(RasterAnimationState state)
-        {
-            FrameSequenceStopped?.Invoke(state);
-        }
-
         private void OnFrameSequencePlayLoopStart(RasterAnimationState state)
         {
             if (m_WaitForAdvanceFrameSequence)
@@ -532,12 +516,6 @@ namespace _0G.Legacy
                     return;
                 }
             }
-            FrameSequencePlayLoopStarted?.Invoke(state);
-        }
-
-        private void OnFrameSequencePlayLoopStop(RasterAnimationState state)
-        {
-            FrameSequencePlayLoopStopped?.Invoke(state);
         }
 
         private void OnFrameSequenceAudioTriggered(FrameSequence.AudioTrigger audioTrigger)
@@ -577,6 +555,7 @@ namespace _0G.Legacy
             // then call reset, which will invoke events that may need the state reference
             m_RasterAnimationState = new RasterAnimationState(rasterAnimation, options);
             m_RasterAnimationState.Reset();
+            m_RasterAnimationState.FrameSequencePlayLoopStarted += OnFrameSequencePlayLoopStart;
             m_RasterAnimationState.FrameSequenceAudioTriggered += OnFrameSequenceAudioTriggered;
             m_RasterAnimationState.FrameChanged += OnFrameChanged;
             m_RasterAnimationState.SetLoopMode(m_RasterAnimationLoopMode);
@@ -588,6 +567,7 @@ namespace _0G.Legacy
             {
                 m_RasterAnimationState.FrameChanged -= OnFrameChanged;
                 m_RasterAnimationState.FrameSequenceAudioTriggered -= OnFrameSequenceAudioTriggered;
+                m_RasterAnimationState.FrameSequencePlayLoopStarted -= OnFrameSequencePlayLoopStart;
                 m_RasterAnimationState = null;
             }
         }
