@@ -98,6 +98,10 @@ namespace _0G.Legacy
 
         public bool CurrentSequenceLoops => _frameSequencePlayCount > 1;
 
+        public virtual int frameSequenceFrameCountFull => _frameSequenceFrameList.Count * _frameSequencePlayCount;
+
+        public virtual int frameSequenceFrameCountOnce => _frameSequenceFrameList.Count;
+
         public virtual int frameSequenceFromFrame => _frameSequenceFrameList[0];
 
         public virtual int frameSequenceIndex => _frameSequenceIndex;
