@@ -228,6 +228,16 @@ namespace _0G.Legacy
             return GetBody(collision.collider);
         }
 
+        public GameObjectBody GetBodyByCharacterID(int characterID)
+        {
+            // TODO: make this work for enemies/NPCs/etc.
+            if (characterID == 1)
+            {
+                return FirstPlayerCharacter;
+            }
+            throw new System.NotImplementedException();
+        }
+
         public bool IsPlayerCharacter(Collider collider)
         {
             return collider.CompareTag(CharacterTag.Player.ToString()) &&

@@ -61,6 +61,18 @@ namespace _0G
             m_Output = -1;
         }
 
+        public void SetLock(object lockingObject, bool isLocking, Options options = new Options())
+        {
+            if (isLocking)
+            {
+                AddLock(lockingObject, options);
+            }
+            else
+            {
+                RemoveLock(lockingObject, options);
+            }
+        }
+
         public void AddLock(object lockingObject, Options options = new Options())
         {
             Debug.Assert(lockingObject != null);

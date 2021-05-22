@@ -16,6 +16,7 @@ namespace _0G
             Flow.Setup(anchor);
             Player.Setup(anchor);
             PlayerCharacter.Setup(anchor);
+            CinematicDirector.Setup(anchor);
         }
 
         private void OnDestroy()

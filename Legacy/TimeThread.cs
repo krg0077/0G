@@ -593,5 +593,17 @@ namespace _0G.Legacy
             QueueUnpause(unpausingObject);
             yield return null;
         }
+        
+        // PUBLIC COROUTINE METHODS
+
+        public IEnumerator WaitForSeconds(float seconds)
+        {
+            float t = 0;
+            while (t < seconds)
+            {
+                yield return null;
+                t += deltaTime;
+            }
+        }
     }
 }
