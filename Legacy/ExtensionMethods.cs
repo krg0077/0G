@@ -210,7 +210,7 @@ namespace _0G.Legacy
         /// Is approximately equal to...
         /// </summary>
         /// <param name="me">The first value to be compared.</param>
-        /// <param name="v3">The second value to be compared.</param>
+        /// <param name="f">The second value to be compared.</param>
         /// <param name="tolerance">If greater than 0, use this value. Else use Mathf.Approximately.</param>
         public static bool Ap(this float me, float f, float tolerance = 0)
         {
