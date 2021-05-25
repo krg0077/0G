@@ -6,9 +6,9 @@ namespace _0G
 
     public class _0GLoader : MonoBehaviour
     {
-        public static _0GLoader Instance { get; private set; }
+        public static _0GLoader Instance { get; protected set; }
 
-        private void Awake()
+        protected virtual void Awake()
         {
             Instance = this;
             GameObject anchor = gameObject;
@@ -19,7 +19,7 @@ namespace _0G
             CinematicDirector.Setup(anchor);
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
             if (Instance == this) Instance = null;
         }
