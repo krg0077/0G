@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace _0G
@@ -98,6 +98,28 @@ namespace _0G
             if (m_Locks.Count == 0)
             {
                 Locked?.Invoke(false, lockingObject, options);
+            }
+        }
+
+        public void InvertLock(object lockingObject, Options options = new Options())
+        {
+            if (!m_Locks.Contains(lockingObject))
+            {
+                m_Locks.Add(lockingObject);
+
+                if (m_Locks.Count == 1)
+                {
+                    Locked?.Invoke(true, lockingObject, options);
+                }
+            }
+            else
+            {
+                m_Locks.Remove(lockingObject);
+
+                if (m_Locks.Count == 0)
+                {
+                    Locked?.Invoke(false, lockingObject, options);
+                }
             }
         }
 

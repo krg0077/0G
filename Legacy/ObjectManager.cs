@@ -255,6 +255,8 @@ namespace _0G.Legacy
             .Where(ab => ab.name == bundleName)
             .SingleOrDefault();
 
+        private bool IsAssetBundleLoaded(string bundleName) => GetLoadedAssetBundle(bundleName) != null;
+
         private AssetBundle LoadAssetBundle(string bundleName)
         {
             AssetBundle assetBundle = GetLoadedAssetBundle(bundleName);
@@ -392,6 +394,27 @@ namespace _0G.Legacy
             UnloadAssetBundle(bundleName);
         }
 
+        public bool IsAssetPackLoaded<T>(int id, AssetPackAccess access) where T : Docket
+        {
+            if (id == 0) return false;
+
+            bool isCharacter = typeof(T) == typeof(CharacterDossier);
+            Docket dk = isCharacter ? (Docket)CharacterDossiers[id] : (Docket)EnvironmentCharts[id];
+
+            // check the standard asset pack asset bundle (yes, it is needed for lossless as well)
+            bool result = IsAssetBundleLoaded(dk.BundleName + AssetBundlePart.STANDARD_ASSET_PACK);
+            if (!result) return false;
+
+            // check the lossless asset pack asset bundle if desired
+            // TODO: Do we need to do a check for GetElanicData?
+            if (access == AssetPackAccess.LosslessDelayed || access == AssetPackAccess.LosslessImmediate)
+            {
+                return IsAssetBundleLoaded(dk.BundleName + AssetBundlePart.LOSSLESS_ASSET_PACK);
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// LoadAssetPack will be called automatically for each
         /// character in a gameplay scene when the scene is started.
@@ -511,6 +534,8 @@ namespace _0G.Legacy
                 ra.LoadTextures();
             }
         }
+
+        public bool HasAnimation(string animationName) => RasterAnimations.ContainsKey(animationName);
 
         public void RemoveAnimation(string animationName)
         {

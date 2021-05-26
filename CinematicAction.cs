@@ -13,5 +13,7 @@ namespace _0G
         public float Float1;
         public float Float2;
         public float Float3;
+
+        public string String1;
     }
 }

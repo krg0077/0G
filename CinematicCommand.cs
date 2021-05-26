@@ -5,9 +5,11 @@
         // 0 ~ 99 reserved for _0G
         None = 0,
         CameraPanTo,
+        CameraZoomTo,
+        CharacterAnimate,
         CharacterMoveTo,
         CharacterWarpTo,
-        CharacterAnimate,
-        Wait,
+        Flowchart,
+        Wait
     }
 }
