@@ -18,7 +18,7 @@ namespace _0G
 
         private void Start()
         {
-            Debug.Log("0G");
+            Debug.Log("0G", this);
         }
 
         private void Update()

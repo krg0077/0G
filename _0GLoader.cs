@@ -10,7 +10,21 @@ namespace _0G
 
         protected virtual void Awake()
         {
-            Instance = this;
+            if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(this);
+                AddComponents();
+            }
+            else
+            {
+                var message = $"Duplicate instance of _0GLoader ({name}). This will not be used.";
+                Debug.LogWarning(message, this);
+            }
+        }
+
+        protected virtual void AddComponents()
+        {
             GameObject anchor = gameObject;
             Clock.Setup(anchor);
             Flow.Setup(anchor);
