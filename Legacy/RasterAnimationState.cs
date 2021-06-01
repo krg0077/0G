@@ -5,11 +5,6 @@ namespace _0G.Legacy
 {
     public class RasterAnimationState
     {
-        // CONSTANTS
-
-        private const bool ADVANCE = true;
-        private const bool REVERSE = false;
-
         // DELEGATES
 
         public delegate void StateHandler(RasterAnimationState ras);
@@ -17,6 +12,15 @@ namespace _0G.Legacy
         public delegate void AudioHandler(FrameSequence.AudioTrigger audioTrigger);
 
         public delegate void FrameHandler(RasterAnimationState ras, int frameListIndex);
+        
+        // ENUMS
+        
+        protected enum Navigation
+        {
+            Advance,
+            ReverseFrame,
+            ReverseSequence
+        }
 
         // EVENTS
 
@@ -148,7 +152,7 @@ namespace _0G.Legacy
                 frameNumber = _frameSequenceFrameList[++frameListIndex];
             }
             // do we need to loop this sequence?
-            else if (CheckFrameSequenceLoop(ADVANCE))
+            else if (CheckFrameSequenceLoop(Navigation.Advance))
             {
                 FrameSequencePlayLoopStopped?.Invoke(this);
                 ++_frameSequencePlayIndex;
@@ -160,16 +164,16 @@ namespace _0G.Legacy
             else if (_frameSequenceIndex < _rasterAnimation.frameSequenceCount - 1)
             {
                 InvokeFrameSequenceStopHandlers();
-                SetFrameSequence(_frameSequenceIndex + 1, ADVANCE);
+                SetFrameSequence(_frameSequenceIndex + 1, Navigation.Advance);
                 frameListIndex = 0;
                 frameNumber = _frameSequenceFrameList[0];
             }
             // do we need to loop this animation?
-            else if (CheckAnimationLoop(ADVANCE))
+            else if (CheckAnimationLoop(Navigation.Advance))
             {
                 InvokeFrameSequenceStopHandlers();
                 ++_loopIndex;
-                SetFrameSequence(_rasterAnimation.loopToSequence, ADVANCE);
+                SetFrameSequence(_rasterAnimation.loopToSequence, Navigation.Advance);
                 frameListIndex = 0;
                 frameNumber = _frameSequenceFrameList[0];
             }
@@ -199,7 +203,7 @@ namespace _0G.Legacy
                 frameNumber = _frameSequenceFrameList[--frameListIndex];
             }
             // do we need to loop this sequence?
-            else if (CheckFrameSequenceLoop(REVERSE))
+            else if (CheckFrameSequenceLoop(Navigation.ReverseFrame))
             {
                 FrameSequencePlayLoopStopped?.Invoke(this);
                 --_frameSequencePlayIndex;
@@ -211,16 +215,16 @@ namespace _0G.Legacy
             else if (_frameSequenceIndex > 0)
             {
                 InvokeFrameSequenceStopHandlers();
-                SetFrameSequence(_frameSequenceIndex - 1, REVERSE);
+                SetFrameSequence(_frameSequenceIndex - 1, Navigation.ReverseFrame);
                 frameListIndex = _frameSequenceFrameList.Count - 1;
                 frameNumber = _frameSequenceFrameList[frameListIndex];
             }
             // do we need to loop this animation?
-            else if (CheckAnimationLoop(REVERSE))
+            else if (CheckAnimationLoop(Navigation.ReverseFrame))
             {
                 InvokeFrameSequenceStopHandlers();
                 --_loopIndex;
-                SetFrameSequence(_rasterAnimation.frameSequenceCount - 1, REVERSE);
+                SetFrameSequence(_rasterAnimation.frameSequenceCount - 1, Navigation.ReverseFrame);
                 frameListIndex = _frameSequenceFrameList.Count - 1;
                 frameNumber = _frameSequenceFrameList[frameListIndex];
             }
@@ -247,16 +251,16 @@ namespace _0G.Legacy
             if (_frameSequenceIndex < _rasterAnimation.frameSequenceCount - 1)
             {
                 InvokeFrameSequenceStopHandlers();
-                SetFrameSequence(_frameSequenceIndex + 1, ADVANCE);
+                SetFrameSequence(_frameSequenceIndex + 1, Navigation.Advance);
                 frameListIndex = 0;
                 frameNumber = _frameSequenceFrameList[0];
             }
             // do we need to loop this animation?
-            else if (CheckAnimationLoop(ADVANCE))
+            else if (CheckAnimationLoop(Navigation.Advance))
             {
                 InvokeFrameSequenceStopHandlers();
                 ++_loopIndex;
-                SetFrameSequence(_rasterAnimation.loopToSequence, ADVANCE);
+                SetFrameSequence(_rasterAnimation.loopToSequence, Navigation.Advance);
                 frameListIndex = 0;
                 frameNumber = _frameSequenceFrameList[0];
             }
@@ -283,16 +287,16 @@ namespace _0G.Legacy
             if (_frameSequenceIndex > 0)
             {
                 InvokeFrameSequenceStopHandlers();
-                SetFrameSequence(_frameSequenceIndex - 1, REVERSE);
+                SetFrameSequence(_frameSequenceIndex - 1, Navigation.ReverseSequence);
                 frameListIndex = 0; // <==== advance
                 frameNumber = _frameSequenceFrameList[0]; // <==== advance
             }
             // do we need to loop this animation?
-            else if (CheckAnimationLoop(REVERSE))
+            else if (CheckAnimationLoop(Navigation.ReverseSequence))
             {
                 InvokeFrameSequenceStopHandlers();
                 --_loopIndex;
-                SetFrameSequence(_rasterAnimation.frameSequenceCount - 1, REVERSE);
+                SetFrameSequence(_rasterAnimation.frameSequenceCount - 1, Navigation.ReverseSequence);
                 frameListIndex = 0; // <==== advance
                 frameNumber = _frameSequenceFrameList[0]; // <==== advance
             }
@@ -325,7 +329,7 @@ namespace _0G.Legacy
                     if (acts[j] == actionId)
                     {
                         InvokeFrameSequenceStopHandlers();
-                        SetFrameSequence(i, ADVANCE);
+                        SetFrameSequence(i, Navigation.Advance);
                         fListIndex = 0;
                         fNumber = _frameSequenceFrameList[0];
                         OnFrameChanged(fListIndex);
@@ -351,7 +355,7 @@ namespace _0G.Legacy
 
         public void Reset()
         {
-            SetFrameSequence(0, ADVANCE);
+            SetFrameSequence(0, Navigation.Advance);
             OnFrameChanged(0);
         }
 
@@ -364,7 +368,7 @@ namespace _0G.Legacy
         /// </summary>
         /// <param name="frameSequenceIndex">Frame sequence index.</param>
         /// <param name="advance">Advance? Else reverse.</param>
-        protected virtual void SetFrameSequence(int frameSequenceIndex, bool advance)
+        protected virtual void SetFrameSequence(int frameSequenceIndex, Navigation navigation)
         {
             if (!_rasterAnimation.hasPlayableFrameSequences)
             {
@@ -374,7 +378,7 @@ namespace _0G.Legacy
             int playCount, fsLoopCount = 0;
             while (true)
             {
-                if (advance)
+                if (navigation == Navigation.Advance)
                 {
                     // if we are past the range, reset to 0
                     if (frameSequenceIndex >= _rasterAnimation.frameSequenceCount)
@@ -397,7 +401,7 @@ namespace _0G.Legacy
                     break;
                 }
                 // check the next sequence
-                frameSequenceIndex += advance ? 1 : -1;
+                frameSequenceIndex += navigation == Navigation.Advance ? 1 : -1;
                 // handle worst-case scenario
                 ++fsLoopCount;
                 if (fsLoopCount >= _rasterAnimation.frameSequenceCountMax)
@@ -414,7 +418,7 @@ namespace _0G.Legacy
             _frameSequenceName = _rasterAnimation.GetFrameSequenceName(frameSequenceIndex);
             _frameSequenceFrameList = _rasterAnimation.GetFrameSequenceFrameList(frameSequenceIndex);
             _frameSequencePlayCount = playCount;
-            _frameSequencePlayIndex = advance ? 0 : playCount - 1;
+            _frameSequencePlayIndex = navigation == Navigation.ReverseFrame ? playCount - 1 : 0;
             FrameSequenceDurationFull = playCount * _frameSequenceFrameList.Count * _rasterAnimation.SecondsPerFrame;
             FrameSequencePreActions = _rasterAnimation.GetFrameSequencePreActions(frameSequenceIndex);
             FrameSequenceAudioTriggers = _rasterAnimation.GetFrameSequenceAudioTriggers(frameSequenceIndex);
@@ -423,7 +427,7 @@ namespace _0G.Legacy
 
         // PRIVATE METHODS
 
-        private bool CheckAnimationLoop(bool advance)
+        private bool CheckAnimationLoop(Navigation navigation)
         {
             switch (_loopMode)
             {
@@ -433,11 +437,11 @@ namespace _0G.Legacy
                 case RasterAnimationLoopMode.LoopNothing:
                     return false;
                 default:
-                    return _rasterAnimation.DoesLoop(_loopIndex, advance);
+                    return _rasterAnimation.DoesLoop(_loopIndex, navigation == Navigation.Advance);
             }
         }
 
-        private bool CheckFrameSequenceLoop(bool advance)
+        private bool CheckFrameSequenceLoop(Navigation navigation)
         {
             switch (_loopMode)
             {
@@ -446,7 +450,7 @@ namespace _0G.Legacy
                 case RasterAnimationLoopMode.LoopNothing:
                     return false;
                 default:
-                    if (advance)
+                    if (navigation == Navigation.Advance)
                         return _frameSequencePlayIndex < _frameSequencePlayCount - 1;
                     else
                         return _frameSequencePlayIndex > 0;
