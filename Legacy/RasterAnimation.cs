@@ -89,7 +89,7 @@ namespace _0G.Legacy
 
         [Header("Frame Sequence Editor")]
 
-        [Order(0), SerializeField, TextArea(6, 24)]
+        [Order(0), SerializeField, TextArea(4, 12)]
         protected string m_FrameParagraph = default;
 
         //--
