@@ -30,10 +30,6 @@ namespace _0G.Legacy
 
         public Texture2D MapIcon;
 
-        [Header("Animation Data")]
-
-        public List<string> AnimationNames;
-
         // PROPERTIES
 
         public override int ID => EnvironmentID;

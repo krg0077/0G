@@ -13,6 +13,10 @@ namespace _0G.Legacy
 
         public string ProperName;
 
+        [Header("Animation Data")]
+
+        public string[] AnimationNames;
+
         // PROPERTIES
 
         public abstract int ID { get; }

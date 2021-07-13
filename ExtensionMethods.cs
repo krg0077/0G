@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace _0G
@@ -26,6 +27,11 @@ namespace _0G
 
         public static T NewChildGameObjectTyped<T>(this GameObject parentGameObject, string name = null) where T : Component
             => parentGameObject.NewChildGameObject<T>(name).GetComponent<T>();
+
+        // I ENUMERABLE <T>
+
+        public static T[] FindAll<T>(this IEnumerable<T> array, System.Func<T, bool> isMatchFunc)
+            => array.Where(isMatchFunc).ToArray();
 
         // LIST <T>
 

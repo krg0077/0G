@@ -447,12 +447,9 @@ namespace _0G.Legacy
                     AddAnimation(assetBundleSD, sa.animationName, access);
                 }
             }
-            else
+            foreach (string animationName in dk.AnimationNames)
             {
-                foreach (string animationName in ((EnvironmentChart)dk).AnimationNames)
-                {
-                    AddAnimation(assetBundleSD, animationName, access);
-                }
+                AddAnimation(assetBundleSD, animationName, access);
             }
         }
 
