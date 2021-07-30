@@ -23,6 +23,8 @@ namespace _0G.Legacy
         public GameObject MenuItem;
         public Vector3 ItemOffset;
         public bool AllowNoSelectedItem;
+        public bool NavigateExplicitHorizontal;
+        public bool NavigateExplicitVertical;
 
         // PRIVATE FIELDS
 
@@ -38,6 +40,7 @@ namespace _0G.Legacy
             public string Text;
             public UnityAction OnClick;
             public GameObject MenuItem;
+            public Button Button;
         }
 
         // PROPERTIES
@@ -168,12 +171,36 @@ namespace _0G.Legacy
             menuItem.name = key ?? text;
             menuItem.GetComponentInChildren<TextMeshProUGUI>().text = text;
 
+            var button = menuItem.GetComponent<Button>();
             if (onClick != null)
             {
-                Button button = menuItem.GetComponent<Button>();
                 Button.ButtonClickedEvent clickedEvent = button.onClick;
                 clickedEvent.RemoveAllListeners();
                 clickedEvent.AddListener(onClick);
+            }
+            if (NavigateExplicitHorizontal || NavigateExplicitVertical)
+            {
+                Navigation nav = button.navigation;
+                nav.mode = Navigation.Mode.Explicit;
+                if (m_Items.Count > 0)
+                {
+                    Button buttonPrev = m_Items[m_Items.Count - 1].Button;
+                    Navigation navPrev = buttonPrev.navigation;
+                    if (NavigateExplicitHorizontal)
+                    {
+                        navPrev.selectOnRight = button;
+                        nav.selectOnLeft = buttonPrev;
+                        nav.selectOnRight = null; // clear out duplicated value from Instantiate (3+ items)
+                    }
+                    if (NavigateExplicitVertical)
+                    {
+                        navPrev.selectOnDown = button;
+                        nav.selectOnUp = buttonPrev;
+                        nav.selectOnDown = null; // clear out duplicated value from Instantiate (3+ items)
+                    }
+                    buttonPrev.navigation = navPrev;
+                }
+                button.navigation = nav;
             }
 
             m_Items.Add(new Item
@@ -182,6 +209,7 @@ namespace _0G.Legacy
                 Text = text,
                 OnClick = onClick,
                 MenuItem = menuItem,
+                Button = button,
             });
         }
 
