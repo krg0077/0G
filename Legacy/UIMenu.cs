@@ -5,6 +5,10 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+#if NS_DG_TWEENING
+using DG.Tweening;
+#endif
+
 namespace _0G.Legacy
 {
     public class UIMenu : MonoBehaviour
@@ -19,12 +23,18 @@ namespace _0G.Legacy
 
         // SERIALIZED FIELDS
 
+        [Header("Object References")]
         public ScrollRect ScrollView;
         public GameObject MenuItem;
+        public GameObject Cursor;
+        
+        [Header("Menu Options")]
         public Vector3 ItemOffset;
+        public Vector3 CursorOffset;
         public bool AllowNoSelectedItem;
         public bool NavigateExplicitHorizontal;
         public bool NavigateExplicitVertical;
+        public float TweenDuration = 0.1f;
 
         // PRIVATE FIELDS
 
@@ -36,11 +46,14 @@ namespace _0G.Legacy
 
         public struct Item
         {
+            public bool IsValid;
+            public int Index;
             public string Key;
             public string Text;
             public UnityAction OnClick;
             public GameObject MenuItem;
             public Button Button;
+            public ISelectSilently ISelectSilently;
         }
 
         // PROPERTIES
@@ -88,26 +101,35 @@ namespace _0G.Legacy
 
         private void Update()
         {
-            if (!AllowNoSelectedItem)
+            if (!AllowNoSelectedItem && EventSystem.current.currentSelectedGameObject == null)
             {
-                if (EventSystem.current.currentSelectedGameObject == null)
-                {
-                    SelectDefaultItem();
-                }
+                SelectDefaultItem();
             }
-            int i = SelectedItemIndex;
-            if (i != m_PrevSelectedItemIndex)
+            
+            int index = SelectedItemIndex;
+            if (index == m_PrevSelectedItemIndex) return;
+            
+            if (ScrollView != null && ScrollView.vertical)
             {
-                if (ScrollView != null && ScrollView.vertical)
-                {
-                    ScrollView.verticalNormalizedPosition = Mathf.InverseLerp(m_Items.Count - 1, 0, i);
-                }
-                ItemSelectionChanged?.Invoke(i);
-                m_PrevSelectedItemIndex = i;
+                ScrollView.verticalNormalizedPosition = Mathf.InverseLerp(m_Items.Count - 1, 0, index);
             }
+                
+            if (Cursor != null && Cursor.activeSelf)
+            {
+                Transform menuItemTransform = m_Items[index].MenuItem.transform;
+                Transform cursorTransform = Cursor.transform;
+#if NS_DG_TWEENING
+                cursorTransform.DOMove(menuItemTransform.position + CursorOffset, TweenDuration);
+#else
+                cursorTransform.position = menuItemTransform.position + CursorOffset;
+#endif
+            }
+
+            ItemSelectionChanged?.Invoke(index);
+            m_PrevSelectedItemIndex = index;
         }
 
-        // PUBLIC CUSTOM METHODS
+        // PUBLIC METHODS
 
         public void Clear()
         {
@@ -143,8 +165,9 @@ namespace _0G.Legacy
 
         public void AddItem(string key, string text, UnityAction onClick)
         {
+            int index = m_Items.Count;
             GameObject menuItem;
-            if (m_Items.Count == 0)
+            if (index == 0)
             {
                 menuItem = MenuItem;
                 ScrollView.content.sizeDelta = Vector2.zero;
@@ -153,7 +176,7 @@ namespace _0G.Legacy
             {
                 menuItem = Instantiate(MenuItem, MenuItem.transform.parent);
                 RectTransform rt = menuItem.GetComponent<RectTransform>();
-                rt.localPosition += ItemOffset * m_Items.Count;
+                rt.localPosition += ItemOffset * index;
 
                 // we need to set the new content size so the scrolling works properly
                 if (ScrollView.vertical)
@@ -182,9 +205,9 @@ namespace _0G.Legacy
             {
                 Navigation nav = button.navigation;
                 nav.mode = Navigation.Mode.Explicit;
-                if (m_Items.Count > 0)
+                if (index > 0)
                 {
-                    Button buttonPrev = m_Items[m_Items.Count - 1].Button;
+                    Button buttonPrev = m_Items[index - 1].Button;
                     Navigation navPrev = buttonPrev.navigation;
                     if (NavigateExplicitHorizontal)
                     {
@@ -205,11 +228,14 @@ namespace _0G.Legacy
 
             m_Items.Add(new Item
             {
+                IsValid = true,
+                Index = index,
                 Key = key,
                 Text = text,
                 OnClick = onClick,
                 MenuItem = menuItem,
                 Button = button,
+                ISelectSilently = menuItem.GetComponent<ISelectSilently>(),
             });
         }
 
@@ -221,36 +247,27 @@ namespace _0G.Legacy
             item.MenuItem.GetComponentInChildren<TextMeshProUGUI>().text = text;
         }
 
-        public void SelectDefaultItem()
-        {
-            ISelectSilently iss = MenuItem.GetComponent<ISelectSilently>();
-            if (iss != null)
-            {
-                iss.SelectSilently();
-            }
-            else
-            {
-                MenuItem.GetComponent<Button>().Select();
-            }
-        }
+        public void SelectDefaultItem() => SelectItem(m_Items[0]);
 
-        public void SelectItem(int itemIndex)
-        {
-            Item item = m_Items[itemIndex];
-            ISelectSilently iss = item.MenuItem.GetComponent<ISelectSilently>();
-            if (iss != null)
-            {
-                iss.SelectSilently();
-            }
-            else
-            {
-                MenuItem.GetComponent<Button>().Select();
-            }
-        }
+        public void SelectItem(int itemIndex) => SelectItem(m_Items[itemIndex]);
 
         public void SetVisible(bool value)
         {
             m_CanvasGroup.alpha = value ? 1 : 0;
+        }
+        
+        // PRIVATE METHODS
+
+        private static void SelectItem(Item item)
+        {
+            if (item.ISelectSilently != null)
+            {
+                item.ISelectSilently.SelectSilently();
+            }
+            else
+            {
+                item.Button.Select();
+            }
         }
     }
 }
