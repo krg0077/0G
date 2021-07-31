@@ -50,6 +50,7 @@ namespace _0G.Legacy
             public int Index;
             public string Key;
             public string Text;
+            public string Description;
             public UnityAction OnClick;
             public GameObject MenuItem;
             public Button Button;
@@ -158,12 +159,12 @@ namespace _0G.Legacy
             m_PrevSelectedItemIndex = -1;
         }
 
-        public void AddItem(string text, UnityAction onClick)
+        public void AddItem(string text, UnityAction onClick, string description = null)
         {
-            AddItem(null, text, onClick);
+            AddItem(null, text, onClick, description);
         }
 
-        public void AddItem(string key, string text, UnityAction onClick)
+        public void AddItem(string key, string text, UnityAction onClick, string description = null)
         {
             int index = m_Items.Count;
             GameObject menuItem;
@@ -232,12 +233,17 @@ namespace _0G.Legacy
                 Index = index,
                 Key = key,
                 Text = text,
+                Description = description,
                 OnClick = onClick,
                 MenuItem = menuItem,
                 Button = button,
                 ISelectSilently = menuItem.GetComponent<ISelectSilently>(),
             });
         }
+
+        // this function should be reserved for reading an item's data, such as text or description
+        // modifications should be handled through new methods as needed
+        public Item GetItem(int itemIndex) => m_Items[itemIndex];
 
         public void RenameItem(int itemIndex, string text)
         {
