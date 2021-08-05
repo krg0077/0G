@@ -21,6 +21,10 @@ namespace _0G.Legacy
 #endif
 
         private Stack<string> m_Screens = new Stack<string>();
+        
+        // PROPERTIES
+
+        public bool IsLastScreen => m_Screens.Count == 1;
 
         // MONOBEHAVIOUR-LIKE METHODS
 

@@ -5,10 +5,6 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-#if NS_DG_TWEENING
-using DG.Tweening;
-#endif
-
 namespace _0G.Legacy
 {
     public class UIMenu : MonoBehaviour
@@ -30,15 +26,15 @@ namespace _0G.Legacy
         
         [Header("Menu Options")]
         public Vector3 ItemOffset;
-        public Vector3 CursorOffset;
         public bool AllowNoSelectedItem;
         public bool NavigateExplicitHorizontal;
         public bool NavigateExplicitVertical;
-        public float TweenDuration = 0.1f;
 
         // PRIVATE FIELDS
 
+        private Canvas m_Canvas;
         private CanvasGroup m_CanvasGroup;
+        private CanvasScaler m_CanvasScaler;
         private List<Item> m_Items = new List<Item>();
         private int m_PrevSelectedItemIndex = -1;
 
@@ -53,6 +49,7 @@ namespace _0G.Legacy
             public string Description;
             public UnityAction OnClick;
             public GameObject MenuItem;
+            public Transform CursorAnchor;
             public Button Button;
             public ISelectSilently ISelectSilently;
         }
@@ -97,7 +94,9 @@ namespace _0G.Legacy
 
         private void Awake()
         {
-            m_CanvasGroup = GetComponentInChildren<CanvasGroup>(true);
+            m_Canvas = GetComponentInChildren<Canvas>(true);
+            m_CanvasGroup = m_Canvas.GetComponent<CanvasGroup>();
+            m_CanvasScaler = m_Canvas.GetComponent<CanvasScaler>();
         }
 
         private void Update()
@@ -110,20 +109,11 @@ namespace _0G.Legacy
             int index = SelectedItemIndex;
             if (index == m_PrevSelectedItemIndex) return;
             
+            // PROCEED ONLY IF NEW SELECTION
+            
             if (ScrollView != null && ScrollView.vertical)
             {
                 ScrollView.verticalNormalizedPosition = Mathf.InverseLerp(m_Items.Count - 1, 0, index);
-            }
-                
-            if (Cursor != null && Cursor.activeSelf)
-            {
-                Transform menuItemTransform = m_Items[index].MenuItem.transform;
-                Transform cursorTransform = Cursor.transform;
-#if NS_DG_TWEENING
-                cursorTransform.DOMove(menuItemTransform.position + CursorOffset, TweenDuration);
-#else
-                cursorTransform.position = menuItemTransform.position + CursorOffset;
-#endif
             }
 
             ItemSelectionChanged?.Invoke(index);
@@ -182,7 +172,7 @@ namespace _0G.Legacy
                 // we need to set the new content size so the scrolling works properly
                 if (ScrollView.vertical)
                 {
-                    const float referenceHeight = 1080; // TODO: get this dynamically from canvas
+                    float referenceHeight = m_CanvasScaler.referenceResolution.y;
                     float y = Mathf.Abs(rt.localPosition.y) + rt.sizeDelta.y - referenceHeight;
                     ScrollView.content.sizeDelta = ScrollView.content.sizeDelta.SetY(y);
                 }
@@ -236,6 +226,7 @@ namespace _0G.Legacy
                 Description = description,
                 OnClick = onClick,
                 MenuItem = menuItem,
+                CursorAnchor = menuItem.transform.Find("Cursor Anchor"),
                 Button = button,
                 ISelectSilently = menuItem.GetComponent<ISelectSilently>(),
             });

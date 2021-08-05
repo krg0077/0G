@@ -18,8 +18,8 @@ namespace _0G
             }
             else
             {
-                var message = $"Duplicate instance of _0GLoader ({name}). This will not be used.";
-                Debug.LogWarning(message, this);
+                var message = $"Ignoring duplicate instance of _0GLoader: {name}";
+                Debug.Log(message, this);
             }
         }
 
