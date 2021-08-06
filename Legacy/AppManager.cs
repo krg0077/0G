@@ -181,6 +181,30 @@ namespace _0G.Legacy
         }
 
         /// <summary>
+        /// Checks to see if the app manager has the specified scene controller.
+        /// </summary>
+        /// <param name="sceneName">Scene name.</param>
+        public virtual bool HasSceneController(string sceneName)
+        {
+            for (int i = 0; i < _sceneControllers.Count; ++i)
+            {
+                SceneController sc = _sceneControllers[i];
+                // if the scene was unloaded or the scene controller was destroyed for any reason, remove it and continue
+                if (sc == null)
+                {
+                    _sceneControllers.RemoveAt(i--);
+                    continue;
+                }
+                // if this is the desired scene...
+                if (sceneName == sc.sceneName)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Removes a scene activation listener.
         /// </summary>
         /// <param name="sceneName">Scene name.</param>
