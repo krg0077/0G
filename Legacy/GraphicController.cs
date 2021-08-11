@@ -18,6 +18,7 @@ namespace _0G.Legacy
         // EVENTS
 
         public event AnimationEndHandler AnimationEnded;
+        public event RasterAnimationState.FrameHandler FrameChanged;
         public event RasterAnimationState.StateHandler FrameSequenceStarted;
         public event RasterAnimationState.StateHandler FrameSequenceStopped;
         public event RasterAnimationState.StateHandler FrameSequencePlayLoopStarted;
@@ -542,7 +543,7 @@ namespace _0G.Legacy
             G.audio.PlaySFX(audioTrigger.AudioEvent, position);
         }
 
-        protected virtual void OnFrameChanged(RasterAnimationState state, int frameListIndex) { }
+        protected virtual void OnFrameChanged(RasterAnimationState state, int frameListIndex) => FrameChanged?.Invoke(state, frameListIndex);
 
         protected virtual void OnAnimationClear() { }
 
