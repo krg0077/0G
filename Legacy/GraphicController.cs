@@ -490,10 +490,10 @@ namespace _0G.Legacy
             }
         }
 
-        public void GoToFrameSequenceWithPreAction(int actionId)
+        public void GoToFrameSequenceWithAnyPreActions(params int[] actionIds)
         {
-            if (m_RasterAnimationState.GoToFrameSequenceWithPreAction(
-                actionId, ref m_AnimationFrameListIndex, out int frameNumber))
+            if (m_RasterAnimationState.GoToFrameSequenceWithAnyPreActions(
+                actionIds, ref m_AnimationFrameListIndex, out int frameNumber))
             {
                 // GraphicController uses zero-based image index (m_AnimationImageIndex)
                 // RasterAnimation uses one-based frame number (frameNumber)

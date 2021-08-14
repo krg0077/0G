@@ -311,14 +311,14 @@ namespace _0G.Legacy
         }
 
         /// <summary>
-        /// Goes to the current or next frame sequence with the specified pre-action ID.
-        /// NOTE: It will wrap around the animation to check earilier frame sequences as well.
+        /// Goes to the current or next frame sequence with any of the specified pre-action IDs.
+        /// NOTE: It will wrap around the animation to check earlier frame sequences as well.
         /// </summary>
-        /// <param name="actionId">The specified pre-action ID.</param>
+        /// <param name="actionIds">The specified pre-action IDs.</param>
         /// <param name="frameListIndex">The index for the array containing the list of frame numbers.</param>
         /// <param name="frameNumber">Frame number (one-based).</param>
         /// <returns><c>true</c>, if this operation was successful, <c>false</c> otherwise.</returns>
-        public virtual bool GoToFrameSequenceWithPreAction(int actionId, ref int frameListIndex, out int frameNumber)
+        public virtual bool GoToFrameSequenceWithAnyPreActions(int[] actionIds, ref int frameListIndex, out int frameNumber)
         {
             bool doIndex(int i, ref int fListIndex, out int fNumber)
             {
@@ -326,14 +326,17 @@ namespace _0G.Legacy
                 List<int> acts = _rasterAnimation.GetFrameSequencePreActions(i);
                 for (int j = 0; j < acts.Count; ++j)
                 {
-                    if (acts[j] == actionId)
+                    for (int k = 0; k < actionIds.Length; ++k)
                     {
-                        InvokeFrameSequenceStopHandlers();
-                        SetFrameSequence(i, Navigation.Advance);
-                        fListIndex = 0;
-                        fNumber = _frameSequenceFrameList[0];
-                        OnFrameChanged(fListIndex);
-                        return true;
+                        if (acts[j] == actionIds[k])
+                        {
+                            InvokeFrameSequenceStopHandlers();
+                            SetFrameSequence(i, Navigation.Advance);
+                            fListIndex = 0;
+                            fNumber = _frameSequenceFrameList[0];
+                            OnFrameChanged(fListIndex);
+                            return true;
+                        }
                     }
                 }
                 return false;
