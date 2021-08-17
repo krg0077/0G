@@ -143,6 +143,8 @@ namespace _0G.Legacy
 
         public float FrameSequenceDuration => m_RasterAnimationState.FrameSequenceDurationFull / m_SpeedMultiplier;
 
+        public int FrameSequenceIndex => m_RasterAnimationState.frameSequenceIndex;
+
         public bool IsAnimationPlaying => m_AnimationContext != AnimationContext.None;
 
         protected virtual GameObject GraphicGameObject => m_Body?.Refs.GraphicGameObject ?? gameObject;
