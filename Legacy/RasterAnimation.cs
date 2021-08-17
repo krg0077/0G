@@ -18,7 +18,7 @@ namespace _0G.Legacy
         menuName = "0G Legacy Scriptable Object/Raster Animation",
         order = 1801
     )]
-    public class RasterAnimation : AnimationData
+    public class RasterAnimation : ScriptableObject
     {
         // CONSTANTS
 

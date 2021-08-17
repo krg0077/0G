@@ -59,12 +59,12 @@ namespace _0G.Legacy
 #endif
         [SerializeField]
         [Tooltip("The attacker's animation(s) during the attack.")]
-        protected AnimationData[] _attackerAnimations;
+        protected RasterAnimation[] _attackerAnimations;
         //obsolete...
         [HideInInspector]
         [SerializeField]
         [System.Obsolete("Use _attackerAnimations instead.")]
-        protected AnimationData m_attackerAnimation;
+        protected RasterAnimation m_attackerAnimation;
 
         [SerializeField, Tooltip("This ability is locked until the attacker obtains this key item.")]
         [Enum(typeof(ItemID))]
@@ -381,7 +381,7 @@ namespace _0G.Legacy
         /// </summary>
         /// <returns>The attacker animation. Can be null.</returns>
         /// <param name="index">Index. (Use attackerAnimationCount to get count.)</param>
-        public virtual AnimationData GetAttackerAnimation(int index)
+        public virtual RasterAnimation GetAttackerAnimation(int index)
         {
             G.U.Assert(_attackerAnimations != null);
             if (index < 0 || index >= _attackerAnimations.Length)
@@ -442,7 +442,7 @@ namespace _0G.Legacy
                         {
                             if (_attackerAnimations == null)
                             {
-                                _attackerAnimations = new AnimationData[1];
+                                _attackerAnimations = new RasterAnimation[1];
                             }
                             int ol = _attackerAnimations.Length; //original length
                             if (_attackerAnimations[ol - 1] == null)
