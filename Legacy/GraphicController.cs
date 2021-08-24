@@ -333,6 +333,8 @@ namespace _0G.Legacy
             m_AnimationImageIndex = 0;
             m_WaitForAdvanceFrameSequence = false;
 
+            OnAnimationSet();
+
             if (G.U.IsPlayMode(this))
             {
                 RasterAnimationOptions options = new RasterAnimationOptions
@@ -342,8 +344,6 @@ namespace _0G.Legacy
                 LoadNewRasterAnimationState(rasterAnimation, options);
                 m_AnimationImageIndex = m_RasterAnimationState.frameSequenceFromFrame - 1; // 1-based -> 0-based
             }
-
-            OnAnimationSet();
 
             RefreshAnimationImage();
         }
@@ -549,6 +549,7 @@ namespace _0G.Legacy
 
         protected virtual void OnAnimationClear() { }
 
+        // When the raster animation has been set, but the new state has not yet been loaded.
         protected virtual void OnAnimationSet() { }
 
         private void OnAnimationEnd(bool isCompleted, bool reassessState = true)
