@@ -728,13 +728,18 @@ namespace _0G.Legacy
         }
 
         // EDITOR METHODS
+        
+        /// <summary>
+        /// Intended only for specialized editor use, such as prefab creation.
+        /// </summary>
+        public void AssignStandaloneAnimation(RasterAnimation rasterAnimation) => m_StandaloneAnimation = rasterAnimation;
 
         /// <summary>
         /// Intended only for specialized editor use, such as an animation preview.
         /// </summary>
         public void ClearMaterialTexture()
         {
-            m_Material.mainTexture = null;
+            if (m_Material != null) m_Material.mainTexture = null;
         }
 
         /// <summary>

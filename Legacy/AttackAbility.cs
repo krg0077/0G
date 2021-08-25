@@ -30,6 +30,8 @@ namespace _0G.Legacy
         // CONSTANTS
 
         public const int VERSION = 2;
+        
+        public const string ATTACK_ABILITY_SUFFIX = "_AttackAbility";
 
         public const float DPS_INTERVAL = 0.05f;
 
@@ -471,5 +473,22 @@ namespace _0G.Legacy
                 ++_serializedVersion;
             }
         }
+        
+        // EDITOR METHODS
+        
+        /// <summary>
+        /// Intended only for specialized editor use, such as asset creation.
+        /// </summary>
+        public void AssignAttackKey(string attackKey) => _attackKey = attackKey;
+        
+        /// <summary>
+        /// Intended only for specialized editor use, such as asset creation.
+        /// </summary>
+        public void AssignAttackPrefab(Attack attackPrefab) => _attackPrefab = attackPrefab;
+        
+        /// <summary>
+        /// Intended only for specialized editor use, such as asset creation.
+        /// </summary>
+        public void AssignAttackerAnimations(RasterAnimation[] attackerAnimations) => _attackerAnimations = attackerAnimations;
     }
 }
