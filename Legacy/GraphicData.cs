@@ -17,6 +17,11 @@ namespace _0G.Legacy
 #endif
         public int GalleryOrderOffset;
 
+#if ODIN_INSPECTOR
+        [HideIf("ExcludeFromGallery")]
+#endif
+        public CharacterGalleryFlags CharacterGalleryFlags;
+
         public Material BaseSharedMaterial;
 
         public Texture2D EditorSprite;
