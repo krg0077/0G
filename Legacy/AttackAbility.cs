@@ -489,6 +489,11 @@ namespace _0G.Legacy
         /// <summary>
         /// Intended only for specialized editor use, such as asset creation.
         /// </summary>
+        public void AssignIsAuxiliaryAttack(bool isAuxiliaryAttack) => _isAuxiliaryAttack = isAuxiliaryAttack;
+        
+        /// <summary>
+        /// Intended only for specialized editor use, such as asset creation.
+        /// </summary>
         public void AssignAttackerAnimations(RasterAnimation[] attackerAnimations) => _attackerAnimations = attackerAnimations;
     }
 }

@@ -732,7 +732,12 @@ namespace _0G.Legacy
         /// <summary>
         /// Intended only for specialized editor use, such as prefab creation.
         /// </summary>
-        public void AssignStandaloneAnimation(RasterAnimation rasterAnimation) => m_StandaloneAnimation = rasterAnimation;
+        public void AssignEditorSpriteOverride(Texture2D editorSpriteOverride) => m_EditorSpriteOverride = editorSpriteOverride;
+        
+        /// <summary>
+        /// Intended only for specialized editor use, such as prefab creation.
+        /// </summary>
+        public void AssignStandaloneAnimation(RasterAnimation standaloneAnimation) => m_StandaloneAnimation = standaloneAnimation;
 
         /// <summary>
         /// Intended only for specialized editor use, such as an animation preview.
